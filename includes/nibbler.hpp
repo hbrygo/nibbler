@@ -2,11 +2,19 @@
 # define NIBBLER_HPP
 
 # include <iostream>
+# include <GLFW/glfw3.h>
 # include "game.hpp"
 # include "Agraphique.hpp"
 # include "graphiqueGL.hpp"
 # include "graphiqueMLX.hpp"
-# include <GLFW/glfw3.h>
-# include "glad.h"
+
+// Graphics mode enum
+enum GraphicsMode {
+    ONE,
+    TWO,
+    THREE
+};
+
+void drawWindowThree();
 
 #endif
