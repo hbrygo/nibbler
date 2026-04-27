@@ -7,6 +7,5 @@
 # include "graphiqueGL.hpp"
 # include "graphiqueMLX.hpp"
 # include <GLFW/glfw3.h>
-# include "glad.h"
 
 #endif

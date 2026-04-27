@@ -1,9 +1,16 @@
-SRCS	=	src/main.cpp \
-			src/glad.c \
-			src/game.cpp \
+SRCS_MAIN	=	src/main.cpp \
+				src/game.cpp
 
-OBJS	= ${SRCS:.cpp=.o}
-OBJS	:= ${OBJS:.c=.o}
+SRCS_SDL2	=	src/sdl2Game.cpp \
+				src/game.cpp
+
+OBJS_MAIN	= ${SRCS_MAIN:.cpp=.o}
+OBJS_SDL2	= ${SRCS_SDL2:.cpp=.o}
+
+CFLAGS += -I$(HOME)/Desktop/nibbler/local/include
+LDFLAGS += -L$(HOME)/Desktop/nibbler/local/lib
+LDLIBS += -lSDL2_image
+
 INCS	= includes
 GLAD_INC = glad
 KHR_INC = khr
@@ -13,60 +20,44 @@ CAM_INC = Camera.hpp
 AUDIO_INC = miniaudio
 SDL_DIR = extern/SDL2
 SDL_INC = $(SDL_DIR)/include
-SDL_LIB_DIRS = -L$(SDL_DIR)/lib -L$(SDL_DIR)/build/install/lib
 NAME	= nibbler
+LIB_SDL2	= lib_sdl2.so
+
 CC      = cc
 CXX     = c++
 RM		= rm -rf
-CFLAGS  = -Wall -Wextra -Werror -g -std=c11 -DGL_SILENCE_DEPRECATION
-CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -DGL_SILENCE_DEPRECATION
+CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
 
-STATIC_LIBS = miniaudio/libminiaudio_all.a
+# SDL2 flags
+SDL2_CFLAGS = -I$(HOME)/Desktop/nibbler/local/include/SDL2
+SDL2_LIBS = -L$(HOME)/Desktop/nibbler/local/lib -lSDL2
+SDL2_IMAGE_CFLAGS = -I$(HOME)/Desktop/nibbler/local/include
+SDL2_IMAGE_LIBS = -L$(HOME)/Desktop/nibbler/local/lib -lSDL2_image
+SDL2_TTF_CFLAGS = -I$(HOME)/Desktop/nibbler/local/include
+SDL2_TTF_LIBS = -L$(HOME)/Desktop/nibbler/local/lib -lSDL2_ttf
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	HOMEBREW_LIB64 := /usr/local/lib
-	HOMEBREW_LIBARM := /opt/homebrew/lib
-	LDLIBS = -lglfw -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
-	ifneq (,$(wildcard $(HOMEBREW_LIB64)/libglfw*))
-		LDLIBS := -L$(HOMEBREW_LIB64) $(LDLIBS)
-	endif
-	ifneq (,$(wildcard $(HOMEBREW_LIBARM)/libglfw*))
-		LDLIBS := -L$(HOMEBREW_LIBARM) $(LDLIBS)
-	endif
-else
-	LDFLAGS = -no-pie
-	LDLIBS	= -lglfw -lGL -ldl
-endif
+# Main link flags
+LDFLAGS = -ldl
 
-LDLIBS += $(SDL_LIB_DIRS) -lSDL2
+# Compilation rules
+%.o: %.cpp
+	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLAD_INC} -I ${KHR_INC} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC} -I ${SDL_INC} -I$(HOME)/Desktop/nibbler/local/include ${SDL2_IMAGE_CFLAGS}
 
-.cpp.o:
-	${CXX} ${CXXFLAGS} -c $< -o ${<:.cpp=.o} -I ${INCS} -I ${GLAD_INC} -I ${GLFW_INC} -I ${KHR_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC} -I ${SDL_INC}
+# Main executable
+${NAME}: ${OBJS_MAIN}
+	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -o ${NAME}
 
-%.o: %.c
-	${CC} ${CFLAGS} -c $< -o $@ -I ${INCS} -I ${GLAD_INC} -I ${GLFW_INC} -I ${KHR_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC} -I ${SDL_INC}
+# SDL2 library
+${LIB_SDL2}: ${OBJS_SDL2}
+	${CXX} ${OBJS_SDL2} ${CXXFLAGS} -shared -fPIC ${SDL2_CFLAGS} ${SDL2_LIBS} ${SDL2_IMAGE_LIBS} ${SDL2_TTF_LIBS} -o ${LIB_SDL2}
 
-.PHONY: submodules
-submodules:
-	git submodule update --init --recursive
-	if [ -f "$(SDL_DIR)/CMakeLists.txt" ]; then \
-		mkdir -p $(SDL_DIR)/build && cd $(SDL_DIR)/build && cmake .. -DSDL_STATIC=ON -DCMAKE_INSTALL_PREFIX=$$(pwd)/install && make -j$$(nproc) && make install; \
-	fi
-	if [ -f "$(SDL_DIR)/autogen.sh" ]; then \
-		cd $(SDL_DIR) && ./autogen.sh && ./configure --prefix=$$(pwd)/build/install && make -j$$(nproc) && make install; \
-	fi
-
-${NAME}: submodules ${OBJS}
-	${CXX} ${OBJS} ${STATIC_LIBS} ${CXXFLAGS} ${LDFLAGS} ${LDLIBS} -o ${NAME}
-
-all: ${NAME}
+all: ${NAME} ${LIB_SDL2}
 
 clean:
-		${RM} ${OBJS}
+	${RM} ${OBJS_MAIN} ${OBJS_SDL2}
 
 fclean: clean
-	${RM} ${NAME}
+	${RM} ${NAME} ${LIB_SDL2}
 
 re: fclean all
 

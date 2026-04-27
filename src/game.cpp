@@ -1,7 +1,7 @@
 #include "nibbler.hpp"
 
 Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10) {
-    _gameArea.resize(_gameAreaHeight, std::vector<int>(_gameAreaWidth, 0));
+    _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
         _snakeBody.push_back({_gameAreaHeight / 2, _gameAreaWidth / 2 - i});
@@ -11,7 +11,7 @@ Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10) {
 }
 
 Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(width) {
-    _gameArea.resize(_gameAreaHeight, std::vector<int>(_gameAreaWidth, 0));
+    _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
         _snakeBody.push_back({_gameAreaHeight / 2, _gameAreaWidth / 2 - i});
@@ -60,19 +60,17 @@ void Game::displayGameArea()
     std::cout << std::endl;
 }
 
-int Game::changeDirection(Direction direction) {
-    if (direction == _currentDirection) {
-        std::cout << "Snake is already moving in that direction!" << std::endl;
-        return 0;
-    } else if ((direction == UP && _currentDirection == DOWN) ||
-               (direction == DOWN && _currentDirection == UP) ||
-               (direction == LEFT && _currentDirection == RIGHT) ||
-               (direction == RIGHT && _currentDirection == LEFT)) {
-        std::cout << "Cannot move in the opposite direction!" << std::endl;
-        return 0;
+void Game::changeDirection(Direction direction) {
+    // Vérifier qu'on ne fait pas demi-tour
+    if ((getCurrentDirection() == UP && direction == DOWN) ||
+        (getCurrentDirection() == DOWN && direction == UP) ||
+        (getCurrentDirection() == LEFT && direction == RIGHT) ||
+        (getCurrentDirection() == RIGHT && direction == LEFT)) {
+        std::cerr << "Snake is already moving in that direction!" << std::endl;
+        return;
     }
+    std::cout << "Changing direction to: " << (direction == UP ? "UP" : direction == DOWN ? "DOWN" : direction == LEFT ? "LEFT" : "RIGHT") << std::endl;
     _currentDirection = direction;
-    return 0;
 }
 
 int Game::checkDeath() {
@@ -102,52 +100,78 @@ int Game::onApple() {
 
 void Game::generateApple()
 {
-    _applePosition = {rand() % _gameAreaHeight, rand() % _gameAreaWidth};
-    while (std::find(_snakeBody.begin(), _snakeBody.end(), _applePosition) != _snakeBody.end()) {
-        _applePosition = {rand() % _gameAreaHeight, rand() % _gameAreaWidth};
+    if (_snakeBody.size() >= static_cast<size_t>(_gameAreaHeight) * static_cast<size_t>(_gameAreaWidth)) {
+        _applePosition = {-1, -1};
+        return;
     }
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> rowDist(0, _gameAreaHeight - 1);
+    std::uniform_int_distribution<int> colDist(0, _gameAreaWidth - 1);
+
+    std::pair<int,int> pos;
+    do {
+        pos = { rowDist(rng), colDist(rng) };
+    } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end());
+
+    _applePosition = pos;
 }
 
 int Game::moveSnake() {
-    if (_currentDirection == UP) {
-        for (auto segment = _snakeBody.end() - 1; segment != _snakeBody.begin() - 1; --segment) {
-            if (segment != _snakeBody.begin()) {
-                *segment = *(segment - 1);
-            } else {
-                segment->first -= 1;
-            }
-        }
-    } else if (_currentDirection == DOWN) {
-        for (auto segment = _snakeBody.end() - 1; segment != _snakeBody.begin() - 1; --segment) {
-            if (segment != _snakeBody.begin()) {
-                *segment = *(segment - 1);
-            } else {
-                segment->first += 1;
-            }
-        }
-    } else if (_currentDirection == LEFT) {
-        for (auto segment = _snakeBody.end() - 1; segment != _snakeBody.begin() - 1; --segment) {
-            if (segment != _snakeBody.begin()) {
-                *segment = *(segment - 1);
-            } else {
-                segment->second -= 1;
-            }
-        }
-    } else if (_currentDirection == RIGHT) {
-        for (auto segment = _snakeBody.end() - 1; segment != _snakeBody.begin() - 1; --segment) {
-            if (segment != _snakeBody.begin()) {
-                *segment = *(segment - 1);
-            } else {
-                segment->second += 1;
-            }
-        }
+    if (_snakeBody.empty()) {
+        return -1;
     }
+
+    std::pair<int, int> newHead = _snakeBody.front();
+
+    if (_currentDirection == UP) {
+        newHead.second -= 1;
+    } else if (_currentDirection == DOWN) {
+        newHead.second += 1;
+    } else if (_currentDirection == LEFT) {
+        newHead.first -= 1;
+    } else if (_currentDirection == RIGHT) {
+        newHead.first += 1;
+    } else {
+        return 0;
+    }
+
+    for (size_t i = _snakeBody.size() - 1; i > 0; --i) {
+        _snakeBody[i] = _snakeBody[i - 1];
+    }
+    _snakeBody[0] = newHead;
+
     if (onApple()) {
         generateApple();
     }
+
     if (checkDeath()) {
         std::cout << "Game Over!" << std::endl;
         return -1;
     }
+
     return 0;
+}
+
+int Game::getCell(int x, int y) const {
+    for (const auto& segment : _snakeBody) {
+        if (segment.first == x && segment.second == y) {
+            return SNAKE;
+        }
+    }
+    if (_applePosition.first == x && _applePosition.second == y) {
+        return FOOD;
+    }
+    if ((_wallPosition.first == x && _wallPosition.second == y) || (x < 0 || x >= _gameAreaHeight) || (y < 0 || y >= _gameAreaWidth)) {
+        return WALL;
+    }
+    return EMPTY;
+}
+
+int Game::getCurrentDirection() const {
+    return _currentDirection;
+}
+
+std::vector<std::pair<int, int>>& Game::getSnakeBody() {
+    return _snakeBody;
 }
