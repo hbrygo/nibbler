@@ -1,12 +1,10 @@
 SRCS	=	src/main.cpp \
-			src/glad.c \
-			src/game.cpp \
+			src/Three.cpp \
+			src/game.cpp
 
 OBJS	= ${SRCS:.cpp=.o}
 OBJS	:= ${OBJS:.c=.o}
 INCS	= includes
-GLAD_INC = glad
-KHR_INC = khr
 GLFW_INC = glfw-3.4/include
 GLM_INC = glm
 CAM_INC = Camera.hpp
@@ -35,17 +33,26 @@ ifeq ($(UNAME_S),Darwin)
 	endif
 else
 	LDFLAGS = -no-pie
-	LDLIBS	= -lglfw -lGL -ldl
+	LDLIBS	= -ldl
 endif
 
 .cpp.o:
-		${CXX} ${CXXFLAGS} -c $< -o ${<:.cpp=.o} -I ${INCS} -I ${GLAD_INC} -I ${GLFW_INC} -I ${KHR_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
+		${CXX} ${CXXFLAGS} -c $< -o ${<:.cpp=.o} -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
 
-%.o: %.c
-	${CC} ${CFLAGS} -c $< -o $@ -I ${INCS} -I ${GLAD_INC} -I ${GLFW_INC} -I ${KHR_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
-
-${NAME}: ${OBJS}
+${NAME}: glfw_build ${OBJS}
 	${CXX} ${OBJS} ${STATIC_LIBS} ${CXXFLAGS} ${LDFLAGS} ${LDLIBS} -o ${NAME}
+
+glfw_build:
+	@if [ ! -d glfw-3.4 ]; then \
+		echo "Téléchargement de GLFW 3.4..."; \
+		curl -L -o glfw-3.4.zip https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip; \
+		unzip -q glfw-3.4.zip; \
+		rm glfw-3.4.zip; \
+	fi
+	@if [ ! -d glfw-3.4/build ]; then \
+		mkdir -p glfw-3.4/build; \
+		cd glfw-3.4/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF && make; \
+	fi
 
 all: ${NAME}
 
@@ -54,7 +61,8 @@ clean:
 
 fclean: clean
 	${RM} ${NAME}
+	${RM} glfw-3.4
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re glfw_build
