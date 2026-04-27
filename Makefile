@@ -51,6 +51,8 @@ ${NAME}: ${OBJS_MAIN}
 ${LIB_SDL2}: ${OBJS_SDL2}
 	${CXX} ${OBJS_SDL2} ${CXXFLAGS} -shared -fPIC ${SDL2_CFLAGS} ${SDL2_LIBS} ${SDL2_IMAGE_LIBS} ${SDL2_TTF_LIBS} -o ${LIB_SDL2}
 
+.DEFAULT_GOAL := all
+
 all: ${NAME} ${LIB_SDL2}
 
 clean:
