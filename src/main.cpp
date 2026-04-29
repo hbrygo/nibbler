@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
         return true;
     };
 
-    // Charger la première lib (SDL2 par défaut)
-    if (!load_lib("./lib_sdl2.so")) {
+    // Charger la première lib (SDL3 par défaut)
+    if (!load_lib("./lib_sdl3.so")) {
         return 1;
     }
 
@@ -68,11 +68,10 @@ int main(int argc, char** argv) {
         display_gui(gui, game);
         
         int input = input_gui(gui);
-        std::cout << "Input received: " << input << std::endl;
         if (input == -1) running = false; // ESC
-        else if (input == 1 && !load_lib("./lib_sdl2.so")) running = false;
-        // else if (input == 2 && !load_lib("./lib_sfml.so")) running = false;
-        // else if (input == 3 && !load_lib("./lib_ncurses.so")) running = false;
+        else if (input == 10 && !load_lib("./lib_sdl3.so")) running = false;  // Mode 1 (was 1)
+        // else if (input == 20 && !load_lib("./lib_other.so")) running = false;  // Mode 2 (was 2)
+        // else if (input == 30 && !load_lib("./lib_third.so")) running = false;  // Mode 3 (was 3)
         else if (input == UP) game.changeDirection(UP);
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);

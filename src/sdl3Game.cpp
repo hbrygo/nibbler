@@ -1,0 +1,426 @@
+#include <iostream>
+#include <dlfcn.h>
+#include <cstdlib>
+#include <map>
+#include "../includes/game.hpp"
+#include "../includes/nibbler.hpp"
+
+// SDL3 constants
+#define SDL_INIT_VIDEO 0x00000020
+
+// SDL3 opaque types
+typedef struct SDL_Window SDL_Window;
+typedef struct SDL_Renderer SDL_Renderer;
+typedef struct SDL_Texture SDL_Texture;
+typedef struct SDL_Surface SDL_Surface;
+
+// SDL3 keyboard event structure (from SDL_events.h)
+struct SDL_KeyboardEvent {
+    unsigned int type;         // SDL_EventType (4 bytes) - offset 0
+    unsigned int reserved;     // (4 bytes) - offset 4
+    unsigned long timestamp;   // Uint64 - nanoseconds (8 bytes) - offset 8
+    unsigned int windowID;     // SDL_WindowID (4 bytes) - offset 16
+    unsigned int which;        // SDL_KeyboardID (4 bytes) - offset 20
+    int scancode;              // SDL_Scancode (4 bytes) - offset 24 ← THIS IS WHAT WE WANT
+    int keycode;               // SDL_Keycode (4 bytes) - offset 28
+    unsigned int mod;          // SDL_Keymod (4 bytes) - offset 32
+    unsigned short raw;        // platform scancode (2 bytes) - offset 36
+    unsigned char down;        // bool (1 byte) - offset 38
+    unsigned char repeat;      // bool (1 byte) - offset 39
+};
+
+// SDL3 event structure with union (correct from SDL3 headers)
+struct SDL_Event {
+    unsigned int type;
+    union {
+        SDL_KeyboardEvent key;
+        char padding[128];
+    };
+};
+
+// SDL3 event types
+#define SDL_EVENT_QUIT 0x100
+#define SDL_EVENT_KEY_DOWN 0x300
+#define SDL_EVENT_KEY_UP 0x301
+
+// SDL3 key codes (scancode based in SDL3)
+#define SDL_SCANCODE_LEFT 0x50
+#define SDL_SCANCODE_RIGHT 0x4F
+#define SDL_SCANCODE_UP 0x52
+#define SDL_SCANCODE_DOWN 0x51
+#define SDL_SCANCODE_ESCAPE 0x29
+#define SDL_SCANCODE_1 0x1E
+#define SDL_SCANCODE_2 0x1F
+#define SDL_SCANCODE_3 0x20
+
+#define SDL_BLENDMODE_BLEND 0x00000001u
+#define SDL_BLENDMODE_BLEND_PREMULTIPLIED 0x00000010u
+struct SDL_Rect {
+    int x, y, w, h;
+};
+
+struct SDL_FRect {
+    float x, y, w, h;
+};
+
+typedef int (*PFNSDLINITPROC)(int);
+typedef int (*PFNSDLQUITPROC)(void);
+typedef SDL_Window* (*PFNSDLCREATEWINDOWPROC)(const char*, int, int, unsigned int);
+typedef SDL_Renderer* (*PFNSDLCREATERENDERERPROC)(SDL_Window*, const char*);
+typedef void (*PFNSDLDESTROYWINDOWPROC)(SDL_Window*);
+typedef void (*PFNSDLDESTROYRENDERERPROC)(SDL_Renderer*);
+typedef const char* (*PFNSDLGETERRORPROC)(void);
+typedef void (*PFNSDLDESTROYEXTUREPROC)(SDL_Texture*);
+typedef bool (*PFNSDLSETRENDERDRAWCOLORPROC)(SDL_Renderer*, unsigned char, unsigned char, unsigned char, unsigned char);
+typedef bool (*PFNSDLRENDERCLEARPROC)(SDL_Renderer*);
+typedef bool (*PFNSDLRENDERFILLRECTPROC)(SDL_Renderer*, const SDL_FRect*);
+typedef bool (*PFNSDLRENDERPRESENTPROC)(SDL_Renderer*);
+typedef int (*PFNSDLPOLLEVENTPROC)(SDL_Event*);
+typedef SDL_Surface* (*PFNSDLLOADBMPPROC)(const char*);
+typedef void (*PFNSDLDESTROYPROC)(SDL_Surface*);
+typedef SDL_Texture* (*PFNSDLCREATETEXTUREFROMSURFACEPROC)(SDL_Renderer*, SDL_Surface*);
+typedef bool (*PFNSDLRENDERTEXTUREPROC)(SDL_Renderer*, SDL_Texture*, const SDL_FRect*, const SDL_FRect*);
+typedef bool (*PFNSDLSETWINDOWINPUTFOCUSPROC)(SDL_Window*);
+typedef bool (*PFNSDLSETSURFACECOLORKEYPROC)(SDL_Surface*, bool, unsigned int);
+typedef bool (*PFNSDLSETTEXTUREBLENDMODEPROC)(SDL_Texture*, unsigned int);
+
+static PFNSDLINITPROC SDL_Init_ptr = nullptr;
+static PFNSDLQUITPROC SDL_Quit_ptr = nullptr;
+static PFNSDLCREATEWINDOWPROC SDL_CreateWindow_ptr = nullptr;
+static PFNSDLCREATERENDERERPROC SDL_CreateRenderer_ptr = nullptr;
+static PFNSDLDESTROYWINDOWPROC SDL_DestroyWindow_ptr = nullptr;
+static PFNSDLDESTROYRENDERERPROC SDL_DestroyRenderer_ptr = nullptr;
+static PFNSDLGETERRORPROC SDL_GetError_ptr = nullptr;
+static PFNSDLDESTROYEXTUREPROC SDL_DestroyTexture_ptr = nullptr;
+static PFNSDLSETRENDERDRAWCOLORPROC SDL_SetRenderDrawColor_ptr = nullptr;
+static PFNSDLRENDERCLEARPROC SDL_RenderClear_ptr = nullptr;
+static PFNSDLRENDERFILLRECTPROC SDL_RenderFillRect_ptr = nullptr;
+static PFNSDLRENDERPRESENTPROC SDL_RenderPresent_ptr = nullptr;
+static PFNSDLPOLLEVENTPROC SDL_PollEvent_ptr = nullptr;
+static PFNSDLLOADBMPPROC SDL_LoadBMP_ptr = nullptr;
+static PFNSDLDESTROYPROC SDL_DestroySurface_ptr = nullptr;
+static PFNSDLCREATETEXTUREFROMSURFACEPROC SDL_CreateTextureFromSurface_ptr = nullptr;
+static PFNSDLRENDERTEXTUREPROC SDL_RenderTexture_ptr = nullptr;
+static PFNSDLSETWINDOWINPUTFOCUSPROC SDL_SetWindowInputFocus_ptr = nullptr;
+static PFNSDLSETSURFACECOLORKEYPROC SDL_SetSurfaceColorKey_ptr = nullptr;
+static PFNSDLSETTEXTUREBLENDMODEPROC SDL_SetTextureBlendMode_ptr = nullptr;
+static void* sdl_handle = nullptr;
+static bool initialized = false;
+
+class SDL3Game {
+public:
+    SDL3Game(int w, int h);
+    ~SDL3Game();
+    void display(const Game& game);
+    int handleInput();
+
+private:
+    SDL_Window* _window;
+    SDL_Renderer* _renderer;
+    int _width, _height;
+    SDL_Texture* _snakeUpDownTexture;
+    SDL_Texture* _snakeLeftRightTexture;
+    SDL_Texture* _snakeTurnRightTexture;
+    SDL_Texture* _snakeTurnLeftTexture;
+    SDL_Texture* _foodTexture;
+    SDL_Texture* _backgroundTexture;
+    SDL_Texture* _wallTexture;
+};
+
+static bool load_sdl3_symbols() {
+    if (initialized) return true;
+    
+    std::cerr << "[SDL3] Loading SDL3..." << std::endl;
+    sdl_handle = dlopen("./sdl3/build/libSDL3.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!sdl_handle) {
+        std::cerr << "[SDL3] Error: Unable to load libSDL3 - " << dlerror() << std::endl;
+        return false;
+    }
+    
+    std::cerr << "[SDL3] ✓ libSDL3 loaded successfully" << std::endl;
+    
+    // Load function pointers from SDL3
+    SDL_Init_ptr = (PFNSDLINITPROC)dlsym(sdl_handle, "SDL_Init");
+    SDL_Quit_ptr = (PFNSDLQUITPROC)dlsym(sdl_handle, "SDL_Quit");
+    SDL_CreateWindow_ptr = (PFNSDLCREATEWINDOWPROC)dlsym(sdl_handle, "SDL_CreateWindow");
+    SDL_CreateRenderer_ptr = (PFNSDLCREATERENDERERPROC)dlsym(sdl_handle, "SDL_CreateRenderer");
+    SDL_DestroyWindow_ptr = (PFNSDLDESTROYWINDOWPROC)dlsym(sdl_handle, "SDL_DestroyWindow");
+    SDL_DestroyRenderer_ptr = (PFNSDLDESTROYRENDERERPROC)dlsym(sdl_handle, "SDL_DestroyRenderer");
+    SDL_GetError_ptr = (PFNSDLGETERRORPROC)dlsym(sdl_handle, "SDL_GetError");
+    SDL_SetRenderDrawColor_ptr = (PFNSDLSETRENDERDRAWCOLORPROC)dlsym(sdl_handle, "SDL_SetRenderDrawColor");
+    SDL_RenderClear_ptr = (PFNSDLRENDERCLEARPROC)dlsym(sdl_handle, "SDL_RenderClear");
+    SDL_RenderFillRect_ptr = (PFNSDLRENDERFILLRECTPROC)dlsym(sdl_handle, "SDL_RenderFillRect");
+    SDL_RenderPresent_ptr = (PFNSDLRENDERPRESENTPROC)dlsym(sdl_handle, "SDL_RenderPresent");
+    SDL_PollEvent_ptr = (PFNSDLPOLLEVENTPROC)dlsym(sdl_handle, "SDL_PollEvent");
+    SDL_LoadBMP_ptr = (PFNSDLLOADBMPPROC)dlsym(sdl_handle, "SDL_LoadBMP");
+    
+    // Load SDL3 image and texture functions
+    SDL_DestroySurface_ptr = (PFNSDLDESTROYPROC)dlsym(sdl_handle, "SDL_DestroySurface");
+    SDL_CreateTextureFromSurface_ptr = (PFNSDLCREATETEXTUREFROMSURFACEPROC)dlsym(sdl_handle, "SDL_CreateTextureFromSurface");
+    SDL_RenderTexture_ptr = (PFNSDLRENDERTEXTUREPROC)dlsym(sdl_handle, "SDL_RenderTexture");
+    SDL_SetWindowInputFocus_ptr = (PFNSDLSETWINDOWINPUTFOCUSPROC)dlsym(sdl_handle, "SDL_SetWindowInputFocus");
+    SDL_DestroyTexture_ptr = (PFNSDLDESTROYEXTUREPROC)dlsym(sdl_handle, "SDL_DestroyTexture");
+    SDL_SetSurfaceColorKey_ptr = (PFNSDLSETSURFACECOLORKEYPROC)dlsym(sdl_handle, "SDL_SetSurfaceColorKey");
+    SDL_SetTextureBlendMode_ptr = (PFNSDLSETTEXTUREBLENDMODEPROC)dlsym(sdl_handle, "SDL_SetTextureBlendMode");
+    
+    if (!SDL_Init_ptr || !SDL_CreateWindow_ptr || !SDL_CreateRenderer_ptr || 
+        !SDL_DestroyWindow_ptr || !SDL_DestroyRenderer_ptr || !SDL_GetError_ptr ||
+        !SDL_SetRenderDrawColor_ptr || !SDL_RenderClear_ptr ||
+        !SDL_RenderFillRect_ptr || !SDL_RenderPresent_ptr || !SDL_PollEvent_ptr ||
+        !SDL_LoadBMP_ptr || !SDL_DestroySurface_ptr || !SDL_CreateTextureFromSurface_ptr ||
+        !SDL_RenderTexture_ptr || !SDL_SetSurfaceColorKey_ptr || !SDL_SetTextureBlendMode_ptr) {
+        std::cerr << "[SDL3] Error: Unable to load all SDL3 symbols" << std::endl;
+        return false;
+    }
+    
+    initialized = true;
+    std::cerr << "[SDL3] SDL3 symbols loaded successfully" << std::endl;
+    return true;
+}
+
+SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(w), _height(h),
+    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
+    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr) {
+    
+    if (!load_sdl3_symbols()) {
+        return;
+    }
+    
+    if (SDL_Init_ptr(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "[SDL3] SDL_Init failed: " << SDL_GetError_ptr() << std::endl;
+        return;
+    }
+    
+    std::cerr << "[SDL3] SDL_Init VIDEO succeeded" << std::endl;
+
+    // Create window with appropriate size
+    int window_width = (w * 32 > 400) ? w * 32 : 400;
+    int window_height = (h * 32 > 400) ? h * 32 : 400;
+    
+    _window = SDL_CreateWindow_ptr("Nibbler - SDL3", window_width, window_height, 0);  // flags=0 for normal window
+    _renderer = SDL_CreateRenderer_ptr(_window, nullptr);
+
+    if (!_window || !_renderer) {
+        std::cerr << "[SDL3] Window/Renderer creation failed: " << SDL_GetError_ptr() << std::endl;
+        SDL_Quit_ptr();
+        return;
+    }
+    
+    std::cerr << "[SDL3] Window and renderer created" << std::endl;
+    
+    // Capture window focus to avoid system shortcuts
+    if (SDL_SetWindowInputFocus_ptr) {
+        SDL_SetWindowInputFocus_ptr(_window);
+        std::cerr << "[SDL3] Window input focus set" << std::endl;
+    }
+    
+    // Load BMP textures from textureSDL3/ directory
+    SDL_Surface* surface = nullptr;
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_up_down.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeUpDownTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeUpDownTexture) SDL_SetTextureBlendMode_ptr(_snakeUpDownTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_up_down.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_right_left.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeLeftRightTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeLeftRightTexture) SDL_SetTextureBlendMode_ptr(_snakeLeftRightTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_right_left.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_turn_right.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeTurnRightTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeTurnRightTexture) SDL_SetTextureBlendMode_ptr(_snakeTurnRightTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_turn_right.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_turn_left.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeTurnLeftTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeTurnLeftTexture) SDL_SetTextureBlendMode_ptr(_snakeTurnLeftTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_turn_left.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/apple.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _foodTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_foodTexture) SDL_SetTextureBlendMode_ptr(_foodTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load apple.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/bg.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _backgroundTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_backgroundTexture) SDL_SetTextureBlendMode_ptr(_backgroundTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load bg.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/wall.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _wallTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_wallTexture) SDL_SetTextureBlendMode_ptr(_wallTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load wall.bmp" << std::endl;
+    }
+    
+    std::cerr << "[SDL3] BMP textures loaded successfully" << std::endl;
+}
+
+SDL3Game::~SDL3Game() {
+    // Free textures
+    if (_snakeUpDownTexture) SDL_DestroyTexture_ptr(_snakeUpDownTexture);
+    if (_snakeLeftRightTexture) SDL_DestroyTexture_ptr(_snakeLeftRightTexture);
+    if (_snakeTurnRightTexture) SDL_DestroyTexture_ptr(_snakeTurnRightTexture);
+    if (_snakeTurnLeftTexture) SDL_DestroyTexture_ptr(_snakeTurnLeftTexture);
+    if (_foodTexture) SDL_DestroyTexture_ptr(_foodTexture);
+    if (_backgroundTexture) SDL_DestroyTexture_ptr(_backgroundTexture);
+    if (_wallTexture) SDL_DestroyTexture_ptr(_wallTexture);
+    if (_renderer) SDL_DestroyRenderer_ptr(_renderer);
+    if (_window) SDL_DestroyWindow_ptr(_window);
+    SDL_Quit_ptr();
+}
+
+void SDL3Game::display(const Game& game) {
+    SDL_SetRenderDrawColor_ptr(_renderer, 0, 0, 0, 255);
+    SDL_RenderClear_ptr(_renderer);
+
+    for (int y = 0; y < _height; ++y) {
+        for (int x = 0; x < _width; ++x) {
+            SDL_FRect rect = { (float)(x * 32), (float)(y * 32), 32.0f, 32.0f };
+            
+            int cell = game.getCell(x, y);
+            if (cell == FOOD) {
+                // Display food texture (fallback: red square)
+                if (_foodTexture) {
+                    SDL_RenderTexture_ptr(_renderer, _foodTexture, nullptr, &rect);
+                } else {
+                    SDL_SetRenderDrawColor_ptr(_renderer, 255, 0, 0, 255);
+                    SDL_RenderFillRect_ptr(_renderer, &rect);
+                }
+            } else if (cell == SNAKE) {
+                // Display snake textures based on direction (fallback: green square)
+                if (_snakeUpDownTexture) {
+                    SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
+                } else {
+                    SDL_SetRenderDrawColor_ptr(_renderer, 0, 255, 0, 255);
+                    SDL_RenderFillRect_ptr(_renderer, &rect);
+                }
+            } else if (cell == WALL) {
+                // Display wall texture (fallback: gray square)
+                if (_wallTexture) {
+                    SDL_RenderTexture_ptr(_renderer, _wallTexture, nullptr, &rect);
+                } else {
+                    SDL_SetRenderDrawColor_ptr(_renderer, 128, 128, 128, 255);
+                    SDL_RenderFillRect_ptr(_renderer, &rect);
+                }
+            } else {
+                // Display background texture (fallback: dark background)
+                if (_backgroundTexture) {
+                    SDL_RenderTexture_ptr(_renderer, _backgroundTexture, nullptr, &rect);
+                } else {
+                    SDL_SetRenderDrawColor_ptr(_renderer, 50, 50, 50, 255);
+                    SDL_RenderFillRect_ptr(_renderer, &rect);
+                }
+            }
+        }
+    }
+
+    SDL_RenderPresent_ptr(_renderer);
+}
+
+int SDL3Game::handleInput() {
+    SDL_Event event;
+    
+    while (SDL_PollEvent_ptr(&event)) {
+        if (event.type == SDL_EVENT_QUIT) {
+            std::cerr << "[SDL3] SDL_EVENT_QUIT received" << std::endl;
+            return -1;
+        }
+        
+        if (event.type == SDL_EVENT_KEY_DOWN) {
+            // Direct access to scancode at offset 24 in the structure
+            unsigned char* bytes = (unsigned char*)&event;
+            int scancode = *(int*)(bytes + 24);  // offset 24 = scancode (little-endian int)
+            std::cerr << "[SDL3] KEY_DOWN - scancode: " << scancode << std::endl;
+            
+            if (scancode == SDL_SCANCODE_ESCAPE) {
+                std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
+                return -1;
+            }
+            // Arrow keys
+            if (scancode == SDL_SCANCODE_LEFT) {
+                std::cerr << "[INPUT] LEFT detected -> returning " << LEFT << std::endl;
+                return LEFT;
+            }
+            if (scancode == SDL_SCANCODE_RIGHT) {
+                std::cerr << "[INPUT] RIGHT detected -> returning " << RIGHT << std::endl;
+                return RIGHT;
+            }
+            if (scancode == SDL_SCANCODE_UP) {
+                std::cerr << "[INPUT] UP detected -> returning " << UP << std::endl;
+                return UP;
+            }
+            if (scancode == SDL_SCANCODE_DOWN) {
+                std::cerr << "[INPUT] DOWN detected -> returning " << DOWN << std::endl;
+                return DOWN;
+            }
+            // Mode controls (use values > 4 to avoid conflict with Direction enum)
+            if (scancode == SDL_SCANCODE_1) {
+                std::cerr << "[INPUT] Mode 1" << std::endl;
+                return 10;  // Increased to avoid UP (1), DOWN (2), etc.
+            }
+            if (scancode == SDL_SCANCODE_2) {
+                std::cerr << "[INPUT] Mode 2" << std::endl;
+                return 20;
+            }
+            if (scancode == SDL_SCANCODE_3) {
+                std::cerr << "[INPUT] Mode 3" << std::endl;
+                return 30;
+            }
+        }
+    }
+    
+    return 0;
+}
+
+extern "C" {
+    void* create_gui(int width, int height) {
+        return new SDL3Game(width, height);
+    }
+    
+    void destroy_gui(void* gui) {
+        delete (SDL3Game*)gui;
+    }
+    
+    void display_gui(void* gui, const Game& game) {
+        ((SDL3Game*)gui)->display(game);
+    }
+    
+    int input_gui(void* gui) {
+        return ((SDL3Game*)gui)->handleInput();
+    }
+}
