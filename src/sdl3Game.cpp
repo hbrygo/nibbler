@@ -556,14 +556,17 @@ int SDL3Game::handleInput() {
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
                 std::cerr << "[INPUT] Mode 1" << std::endl;
+                currentLibrary = MLX;
                 return 10;  // Increased to avoid UP (1), DOWN (2), etc.
             }
             if (scancode == SDL_SCANCODE_2) {
                 std::cerr << "[INPUT] Mode 2" << std::endl;
+                currentLibrary = SDL3;
                 return 20;
             }
             if (scancode == SDL_SCANCODE_3) {
                 std::cerr << "[INPUT] Mode 3" << std::endl;
+                currentLibrary = GL;
                 return 30;
             }
         }
@@ -573,19 +576,19 @@ int SDL3Game::handleInput() {
 }
 
 extern "C" {
-    void* create_gui(int width, int height) {
+    void* create_gui_sdl3(int width, int height) {
         return new SDL3Game(width, height);
     }
     
-    void destroy_gui(void* gui) {
+    void destroy_gui_sdl3(void* gui) {
         delete (SDL3Game*)gui;
     }
     
-    void display_gui(void* gui, const Game& game) {
+    void display_gui_sdl3(void* gui, const Game& game) {
         ((SDL3Game*)gui)->display(game);
     }
     
-    int input_gui(void* gui) {
+    int input_gui_sdl3(void* gui) {
         return ((SDL3Game*)gui)->handleInput();
     }
 }
