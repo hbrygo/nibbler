@@ -26,6 +26,14 @@ enum CellType
     WALL
 };
 
+enum GraphicLibrary {
+    MLX = 1,
+    SDL3 = 2,
+    GL = 3
+};
+
+extern int currentLibrary;
+
 class Game {
     private:
         int _gameAreaHeight;

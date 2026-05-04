@@ -22,6 +22,7 @@ GLGame::~GLGame() {
 }
 
 void GLGame::display(const Game& game) {
+    (void)game; // To avoid unused parameter warning
     // Render the game state using OpenGL here
 }
 

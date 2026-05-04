@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 
-//int currentLibrary = SDL3;
+int currentLibrary = SDL3;
 
 typedef void* (*create_t)(int, int);
 typedef void (*destroy_t)(void*);

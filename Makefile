@@ -4,16 +4,22 @@ SRCS_MAIN	=	src/main.cpp \
 SRCS_SDL3	=	src/sdl3Game.cpp \
 				src/game.cpp
 
+SRCS_GL		=	src/glGame.cpp \
+				src/game.cpp
+
+SRCS_MLX	=	src/mlxGame.cpp \
+				src/game.cpp
+
 OBJS_MAIN	= ${SRCS_MAIN:.cpp=.o}
 OBJS_SDL3	= ${SRCS_SDL3:.cpp=.o}
+OBJS_GL		= ${SRCS_GL:.cpp=.o}
+OBJS_MLX	= ${SRCS_MLX:.cpp=.o}
 
 CFLAGS += -I$(HOME)/Desktop/nibbler/local/include
 LDFLAGS += -L$(HOME)/Desktop/nibbler/local/lib
 LDLIBS += -lSDL2_image
 
 INCS	= includes
-GLAD_INC = glad
-KHR_INC = khr
 GLFW_INC = glfw-3.4/include
 GLM_INC = glm
 CAM_INC = Camera.hpp
@@ -22,6 +28,8 @@ SDL_DIR = extern/SDL2
 SDL_INC = $(SDL_DIR)/include
 NAME	= nibbler
 LIB_SDL3	= lib_sdl3.so
+LIB_GL		= lib_gl.so
+LIB_MLX		= lib_mlx.so
 
 CC      = cc
 CXX     = c++
@@ -31,7 +39,7 @@ CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
 LDFLAGS = -ldl
 
 %.o: %.cpp
-	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLAD_INC} -I ${KHR_INC} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
+	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
 
 sdl3_build:
 	@if [ ! -d sdl3 ]; then \
@@ -47,23 +55,54 @@ sdl3_build:
 		cd ../../..; \
 	fi
 
-${NAME}: sdl3_build ${OBJS_MAIN}
-	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -o ${NAME}
+glfw_build:
+	@if [ ! -d glfw-3.4 ]; then \
+		echo "Téléchargement de GLFW 3.4..."; \
+		curl -L -o glfw-3.4.zip https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip; \
+		unzip -q glfw-3.4.zip; \
+		rm glfw-3.4.zip; \
+	fi
+	@if [ ! -d glfw-3.4/build ]; then \
+		mkdir -p glfw-3.4/build; \
+		cd glfw-3.4/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF && make; \
+	fi
+
+mlx_build:
+	@if [ ! -d MLX42 ]; then \
+		echo "Clonage de MLX42..."; \
+		git clone https://github.com/codam-coding-college/MLX42.git; \
+	fi
+	@if [ ! -d MLX42/build ]; then \
+		mkdir -p MLX42/build; \
+		cd MLX42/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON && make -j4; \
+		cd ../../..; \
+	fi
+
+${NAME}: sdl3_build glfw_build mlx_build ${OBJS_MAIN}
+	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -rdynamic -o ${NAME}
 
 ${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
-	${CXX} ${OBJS_SDL3} ${CXXFLAGS} -shared -fPIC -ldl -L./sdl3/build -L./sdl3_image/build -o ${LIB_SDL3}
+	${CXX} ${OBJS_SDL3} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./sdl3/build -L./sdl3_image/build -o ${LIB_SDL3}
+
+${LIB_GL}: glfw_build ${OBJS_GL}
+	${CXX} ${OBJS_GL} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./glfw-3.4/build -o ${LIB_GL}
+
+${LIB_MLX}: mlx_build ${OBJS_MLX}
+	${CXX} ${OBJS_MLX} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./MLX42/build -o ${LIB_MLX}
 
 .DEFAULT_GOAL := all
 
-all: ${NAME} ${LIB_SDL3}
+all: ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
 
 clean:
-	${RM} ${OBJS_MAIN} ${OBJS_SDL3}
+	${RM} ${OBJS_MAIN} ${OBJS_SDL3} ${OBJS_GL} ${OBJS_MLX}
 
 fclean: clean
-	${RM} ${NAME} ${LIB_SDL3}
+	${RM} ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
 	${RM} sdl3
+	${RM} glfw-3.4
+	${RM} MLX42
 
 re: fclean all
 
-.PHONY: all clean fclean re sdl3_build
+.PHONY: all clean fclean re sdl3_build glfw_build mlx_build
