@@ -59,6 +59,12 @@ struct SDL_Rect {
     int x, y, w, h;
 };
 
+struct SDL_FPoint {
+    float x, y;
+};
+
+typedef int SDL_FlipMode;
+
 struct SDL_FRect {
     float x, y, w, h;
 };
@@ -80,6 +86,7 @@ typedef SDL_Surface* (*PFNSDLLOADBMPPROC)(const char*);
 typedef void (*PFNSDLDESTROYPROC)(SDL_Surface*);
 typedef SDL_Texture* (*PFNSDLCREATETEXTUREFROMSURFACEPROC)(SDL_Renderer*, SDL_Surface*);
 typedef bool (*PFNSDLRENDERTEXTUREPROC)(SDL_Renderer*, SDL_Texture*, const SDL_FRect*, const SDL_FRect*);
+typedef bool (*PFNSDLRENDERTEXTUREROTATEDPROC)(SDL_Renderer*, SDL_Texture*, const SDL_FRect*, const SDL_FRect*, double, const SDL_FPoint*, SDL_FlipMode);
 typedef bool (*PFNSDLSETWINDOWINPUTFOCUSPROC)(SDL_Window*);
 typedef bool (*PFNSDLSETSURFACECOLORKEYPROC)(SDL_Surface*, bool, unsigned int);
 typedef bool (*PFNSDLSETTEXTUREBLENDMODEPROC)(SDL_Texture*, unsigned int);
@@ -101,6 +108,7 @@ static PFNSDLLOADBMPPROC SDL_LoadBMP_ptr = nullptr;
 static PFNSDLDESTROYPROC SDL_DestroySurface_ptr = nullptr;
 static PFNSDLCREATETEXTUREFROMSURFACEPROC SDL_CreateTextureFromSurface_ptr = nullptr;
 static PFNSDLRENDERTEXTUREPROC SDL_RenderTexture_ptr = nullptr;
+static PFNSDLRENDERTEXTUREROTATEDPROC SDL_RenderTextureRotated_ptr = nullptr;
 static PFNSDLSETWINDOWINPUTFOCUSPROC SDL_SetWindowInputFocus_ptr = nullptr;
 static PFNSDLSETSURFACECOLORKEYPROC SDL_SetSurfaceColorKey_ptr = nullptr;
 static PFNSDLSETTEXTUREBLENDMODEPROC SDL_SetTextureBlendMode_ptr = nullptr;
@@ -108,23 +116,24 @@ static void* sdl_handle = nullptr;
 static bool initialized = false;
 
 class SDL3Game {
-public:
-    SDL3Game(int w, int h);
-    ~SDL3Game();
-    void display(const Game& game);
-    int handleInput();
+    private:
+        SDL_Window* _window;
+        SDL_Renderer* _renderer;
+        int _width, _height;
+        SDL_Texture* _snakeUpDownTexture;
+        SDL_Texture* _snakeLeftRightTexture;
+        SDL_Texture* _snakeTurnRightTexture;
+        SDL_Texture* _snakeTurnLeftTexture;
+        SDL_Texture* _foodTexture;
+        SDL_Texture* _backgroundTexture;
+        SDL_Texture* _wallTexture;
 
-private:
-    SDL_Window* _window;
-    SDL_Renderer* _renderer;
-    int _width, _height;
-    SDL_Texture* _snakeUpDownTexture;
-    SDL_Texture* _snakeLeftRightTexture;
-    SDL_Texture* _snakeTurnRightTexture;
-    SDL_Texture* _snakeTurnLeftTexture;
-    SDL_Texture* _foodTexture;
-    SDL_Texture* _backgroundTexture;
-    SDL_Texture* _wallTexture;
+    public:
+        SDL3Game(int w, int h);
+        ~SDL3Game();
+        void display(const Game& game);
+        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody);
+        int handleInput();
 };
 
 static bool load_sdl3_symbols() {
@@ -158,6 +167,7 @@ static bool load_sdl3_symbols() {
     SDL_DestroySurface_ptr = (PFNSDLDESTROYPROC)dlsym(sdl_handle, "SDL_DestroySurface");
     SDL_CreateTextureFromSurface_ptr = (PFNSDLCREATETEXTUREFROMSURFACEPROC)dlsym(sdl_handle, "SDL_CreateTextureFromSurface");
     SDL_RenderTexture_ptr = (PFNSDLRENDERTEXTUREPROC)dlsym(sdl_handle, "SDL_RenderTexture");
+    SDL_RenderTextureRotated_ptr = (PFNSDLRENDERTEXTUREROTATEDPROC)dlsym(sdl_handle, "SDL_RenderTextureRotated");
     SDL_SetWindowInputFocus_ptr = (PFNSDLSETWINDOWINPUTFOCUSPROC)dlsym(sdl_handle, "SDL_SetWindowInputFocus");
     SDL_DestroyTexture_ptr = (PFNSDLDESTROYEXTUREPROC)dlsym(sdl_handle, "SDL_DestroyTexture");
     SDL_SetSurfaceColorKey_ptr = (PFNSDLSETSURFACECOLORKEYPROC)dlsym(sdl_handle, "SDL_SetSurfaceColorKey");
@@ -168,7 +178,7 @@ static bool load_sdl3_symbols() {
         !SDL_SetRenderDrawColor_ptr || !SDL_RenderClear_ptr ||
         !SDL_RenderFillRect_ptr || !SDL_RenderPresent_ptr || !SDL_PollEvent_ptr ||
         !SDL_LoadBMP_ptr || !SDL_DestroySurface_ptr || !SDL_CreateTextureFromSurface_ptr ||
-        !SDL_RenderTexture_ptr || !SDL_SetSurfaceColorKey_ptr || !SDL_SetTextureBlendMode_ptr) {
+        !SDL_RenderTexture_ptr || !SDL_RenderTextureRotated_ptr || !SDL_SetSurfaceColorKey_ptr || !SDL_SetTextureBlendMode_ptr) {
         std::cerr << "[SDL3] Error: Unable to load all SDL3 symbols" << std::endl;
         return false;
     }
@@ -304,6 +314,164 @@ SDL3Game::~SDL3Game() {
     SDL_Quit_ptr();
 }
 
+
+// void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, std::vector<std::pair<int, int>>& snakeBody) {
+//     int nextPosition = 0;
+//     int previousPosition = 0;
+    
+//     for (size_t i = 0; i < snakeBody.size(); ++i) {
+//         if (i == 0) {
+//             if (currentDirection == UP || currentDirection == DOWN) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
+//             } else {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeLeftRightTexture, nullptr, &rect);
+//             }
+//         } else if (i == snakeBody.size() - 1) {
+//             // tail
+//         } else {
+//             if (snakeBody[i - 1].first == snakeBody[i].first - 1 && snakeBody[i - 1].second == snakeBody[i].second) {
+//                 // turn right
+//                 nextPosition = 1;
+//             } else if (snakeBody[i - 1].first == snakeBody[i].first + 1 && snakeBody[i - 1].second == snakeBody[i].second) {
+//                 // turn left
+//                 nextPosition = 2;
+//             } else if (snakeBody[i - 1].first == snakeBody[i].first && snakeBody[i - 1].second == snakeBody[i].second - 1) {
+//                 // up
+//                 nextPosition = 3;
+//             } else if (snakeBody[i - 1].first == snakeBody[i].first && snakeBody[i - 1].second == snakeBody[i].second + 1) {
+//                 // down
+//                 nextPosition = 4;
+//             }
+
+//             if (snakeBody[i + 1].first == snakeBody[i].first - 1 && snakeBody[i + 1].second == snakeBody[i].second) {
+//                 // turn right
+//                 previousPosition = 1;
+//             } else if (snakeBody[i + 1].first == snakeBody[i].first + 1 && snakeBody[i + 1].second == snakeBody[i].second) {
+//                 // turn left
+//                 previousPosition = 2;
+//             } else if (snakeBody[i + 1].first == snakeBody[i].first && snakeBody[i + 1].second == snakeBody[i].second - 1) {
+//                 // up
+//                 previousPosition = 3;
+//             } else if (snakeBody[i + 1].first == snakeBody[i].first && snakeBody[i + 1].second == snakeBody[i].second + 1) {
+//                 // down
+//                 previousPosition = 4;
+//             }
+
+//             if ((previousPosition == 3 && nextPosition == 4) || (previousPosition == 4 && nextPosition == 3)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
+//             } else if ((previousPosition == 1 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 1)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeLeftRightTexture, nullptr, &rect);
+//             } else if ((previousPosition == 3 && nextPosition == 1) || (previousPosition == 1 && nextPosition == 3)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnRightTexture, nullptr, &rect);
+//             } else if ((previousPosition == 3 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 3)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnLeftTexture, nullptr, &rect);
+//             } else if ((previousPosition == 4 && nextPosition == 1) || (previousPosition == 1 && nextPosition == 4)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnLeftTexture, nullptr, &rect);
+//             } else if ((previousPosition == 4 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 4)) {
+//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnRightTexture, nullptr, &rect);
+//             }
+//         }
+//     }
+// }
+
+void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody) {
+    auto renderRotated = [&](SDL_Texture* texture, double angle) {
+        SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
+        // SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
+    };
+
+    for (size_t i = 0; i < snakeBody.size(); ++i) {
+        rect.x = static_cast<float>(snakeBody[i].first * 32);
+        rect.y = static_cast<float>(snakeBody[i].second * 32);
+
+        auto segmentAngleFromDelta = [](int dx, int dy) -> double {
+            if (dx == 1) return 0.0;
+            if (dx == -1) return 180.0;
+            if (dy == 1) return 90.0;
+            if (dy == -1) return 270.0;
+            return 0.0;
+        };
+
+        // HEAD
+        if (i == 0) {
+            double angle = 0.0;
+            if (currentDirection == LEFT) {
+                angle = 180.0;
+            } else if (currentDirection == UP) {
+                angle = 270.0;
+            } else if (currentDirection == DOWN) {
+                angle = 90.0;
+            }
+            renderRotated(_snakeLeftRightTexture, angle);
+        }
+
+        // TAIL (optionnel à compléter)
+        else if (i == snakeBody.size() - 1) {
+            auto prev = snakeBody[i - 1];
+            auto tail = snakeBody[i];
+            int dx = tail.first - prev.first;
+            int dy = tail.second - prev.second;
+            renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx, dy));
+        }
+
+        // BODY
+        else {
+            auto prev = snakeBody[i - 1];
+            auto curr = snakeBody[i];
+            auto next = snakeBody[i + 1];
+
+            int dx1 = curr.first - prev.first;
+            int dy1 = curr.second - prev.second;
+
+            int dx2 = next.first - curr.first;
+            int dy2 = next.second - curr.second;
+
+            // -------- STRAIGHT --------
+            if ((dx1 == dx2) && (dy1 == dy2)) {
+                renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx1, dy1));
+            }
+
+            // -------- TURN --------
+            else {
+                SDL_Texture* texture = nullptr;
+                double angle = 0.0;
+                SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
+
+                // Ta référence:
+                // snake_turn_left = coin (haut + gauche)
+                // snake_turn_right = coin (bas + gauche)
+
+                // On utilise UNE seule base et on la tourne
+                texture = _snakeTurnLeftTexture;
+
+                // Cas des 4 coins
+                if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) {
+                    angle = 270; // OK orientation de base
+                }
+                else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) {
+                    angle = 180;
+                }
+                else if (dx1 == 0 && dy1 == 1 && dx2 == 1 && dy2 == 0) {
+                    angle = 90;
+                }
+                else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) {
+                    angle = 0;
+                } else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) {
+                    angle = 90; // OK orientation de base
+                } else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) {
+                    angle = 0; // OK orientation de base
+                } else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) {
+                    angle = 180;
+                } else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) {
+                    angle = 270;
+                }
+
+                SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
+            }
+        }
+    }
+}
+
 void SDL3Game::display(const Game& game) {
     SDL_SetRenderDrawColor_ptr(_renderer, 0, 0, 0, 255);
     SDL_RenderClear_ptr(_renderer);
@@ -311,6 +479,13 @@ void SDL3Game::display(const Game& game) {
     for (int y = 0; y < _height; ++y) {
         for (int x = 0; x < _width; ++x) {
             SDL_FRect rect = { (float)(x * 32), (float)(y * 32), 32.0f, 32.0f };
+
+            if (_backgroundTexture) {
+                SDL_RenderTexture_ptr(_renderer, _backgroundTexture, nullptr, &rect);
+            } else {
+                SDL_SetRenderDrawColor_ptr(_renderer, 50, 50, 50, 255);
+                SDL_RenderFillRect_ptr(_renderer, &rect);
+            }
             
             int cell = game.getCell(x, y);
             if (cell == FOOD) {
@@ -321,15 +496,8 @@ void SDL3Game::display(const Game& game) {
                     SDL_SetRenderDrawColor_ptr(_renderer, 255, 0, 0, 255);
                     SDL_RenderFillRect_ptr(_renderer, &rect);
                 }
-            } else if (cell == SNAKE) {
-                // Display snake textures based on direction (fallback: green square)
-                if (_snakeUpDownTexture) {
-                    SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
-                } else {
-                    SDL_SetRenderDrawColor_ptr(_renderer, 0, 255, 0, 255);
-                    SDL_RenderFillRect_ptr(_renderer, &rect);
-                }
             } else if (cell == WALL) {
+                std::cout << "[SDL3] Drawing wall at (" << x << ", " << y << ")" << std::endl;
                 // Display wall texture (fallback: gray square)
                 if (_wallTexture) {
                     SDL_RenderTexture_ptr(_renderer, _wallTexture, nullptr, &rect);
@@ -337,16 +505,13 @@ void SDL3Game::display(const Game& game) {
                     SDL_SetRenderDrawColor_ptr(_renderer, 128, 128, 128, 255);
                     SDL_RenderFillRect_ptr(_renderer, &rect);
                 }
-            } else {
-                // Display background texture (fallback: dark background)
-                if (_backgroundTexture) {
-                    SDL_RenderTexture_ptr(_renderer, _backgroundTexture, nullptr, &rect);
-                } else {
-                    SDL_SetRenderDrawColor_ptr(_renderer, 50, 50, 50, 255);
-                    SDL_RenderFillRect_ptr(_renderer, &rect);
-                }
             }
         }
+    }
+
+    if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
+        SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
+        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody());
     }
 
     SDL_RenderPresent_ptr(_renderer);

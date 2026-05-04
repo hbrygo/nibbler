@@ -53,6 +53,7 @@ class Game {
         int getCell(int x, int y) const;
         int getCurrentDirection() const;
         std::vector<std::pair<int, int>>& getSnakeBody();
+        const std::vector<std::pair<int, int>>& getSnakeBody() const;
 };
 
 #endif

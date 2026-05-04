@@ -1,6 +1,6 @@
 #include "nibbler.hpp"
 
-Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10) {
+Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}) {
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -10,7 +10,7 @@ Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10) {
     generateApple();
 }
 
-Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(width) {
+Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}) {
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -172,6 +172,6 @@ int Game::getCurrentDirection() const {
     return _currentDirection;
 }
 
-std::vector<std::pair<int, int>>& Game::getSnakeBody() {
+const std::vector<std::pair<int, int>>& Game::getSnakeBody() const {
     return _snakeBody;
 }
