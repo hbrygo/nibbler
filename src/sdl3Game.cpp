@@ -377,7 +377,7 @@ SDL3Game::~SDL3Game() {
 void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody) {
     auto renderRotated = [&](SDL_Texture* texture, double angle) {
         SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
-        // SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
+        SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
     };
 
     for (size_t i = 0; i < snakeBody.size(); ++i) {
