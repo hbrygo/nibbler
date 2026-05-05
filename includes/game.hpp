@@ -27,7 +27,7 @@ enum CellType
 };
 
 enum GraphicLibrary {
-    MLX = 1,
+    SFML = 1,
     SDL3 = 2,
     GL = 3
 };

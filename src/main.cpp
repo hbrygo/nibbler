@@ -16,22 +16,23 @@ typedef int (*input_t)(void*);
 
 int main(int argc, char** argv) {
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <width> <height> <mlx/sdl3/gl>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <sfml/sdl3/gl>" << std::endl;
         return 1;
     }
-    const char* available_libraries[] = {"mlx", "sdl3", "gl"};
+    const char* available_libraries[] = {"sfml", "sdl3", "gl"};
     const char* selected_library = argv[3];
     for (int i = 0; i < 3; i++) {
         if (strcmp(selected_library, available_libraries[i]) == 0) {
             break;
         }
         if (i == 3) {
-            std::cerr << "Error: Invalid library. Available options are: mlx, sdl3, gl" << std::endl;
+            std::cerr << "Error: Invalid library. Available options are: sfml, sdl3, gl" << std::endl;
             return 1;
         }
     }
 
-    currentLibrary = (selected_library[0] == 'm') ? MLX : (selected_library[0] == 's') ? SDL3 : GL;
+    currentLibrary = (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML : 
+                     (selected_library[0] == 's' && selected_library[1] == 'd') ? SDL3 : GL;
 
     int width = std::atoi(argv[1]);
     int height = std::atoi(argv[2]);
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
     input_t input_gui = nullptr;
 
     auto load_lib = [&](const char* lib_so, int currentLibrary) -> bool {
-        const char* expected_suffix = (currentLibrary == MLX) ? "mlx" : (currentLibrary == SDL3) ? "sdl3" : "gl";
+        const char* expected_suffix = (currentLibrary == SFML) ? "sfml" : (currentLibrary == SDL3) ? "sdl3" : "gl";
         const std::string create_symbol = std::string("create_gui_") + expected_suffix;
         const std::string destroy_symbol = std::string("destroy_gui_") + expected_suffix;
         const std::string display_symbol = std::string("display_gui_") + expected_suffix;
