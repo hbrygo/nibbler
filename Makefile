@@ -1,46 +1,59 @@
-SRCS	=	src/main.cpp \
-			src/Three.cpp \
-			src/game.cpp
+SRCS_MAIN	=	src/main.cpp \
+				src/game.cpp
 
-OBJS	= ${SRCS:.cpp=.o}
-OBJS	:= ${OBJS:.c=.o}
+SRCS_SDL3	=	src/sdl3Game.cpp \
+				src/game.cpp
+
+SRCS_GL		=	src/glGame.cpp \
+				src/game.cpp
+
+SRCS_MLX	=	src/mlxGame.cpp \
+				src/game.cpp
+
+OBJS_MAIN	= ${SRCS_MAIN:.cpp=.o}
+OBJS_SDL3	= ${SRCS_SDL3:.cpp=.o}
+OBJS_GL		= ${SRCS_GL:.cpp=.o}
+OBJS_MLX	= ${SRCS_MLX:.cpp=.o}
+
+CFLAGS += -I$(HOME)/Desktop/nibbler/local/include
+LDFLAGS += -L$(HOME)/Desktop/nibbler/local/lib
+LDLIBS += -lSDL2_image
+
 INCS	= includes
 GLFW_INC = glfw-3.4/include
 GLM_INC = glm
 CAM_INC = Camera.hpp
 AUDIO_INC = miniaudio
+SDL_DIR = extern/SDL2
+SDL_INC = $(SDL_DIR)/include
 NAME	= nibbler
+LIB_SDL3	= lib_sdl3.so
+LIB_GL		= lib_gl.so
+LIB_MLX		= lib_mlx.so
+
 CC      = cc
 CXX     = c++
 RM		= rm -rf
-CFLAGS  = -Wall -Wextra -Werror -g -std=c11 -DGL_SILENCE_DEPRECATION
-CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -DGL_SILENCE_DEPRECATION
+CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
 
-STATIC_LIBS = miniaudio/libminiaudio_all.a
+LDFLAGS = -ldl
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	# macOS: use frameworks for OpenGL and Cocoa, GLFW should be installed via Homebrew
-	# prefer Homebrew locations for libglfw (Intel and Apple Silicon)
-	HOMEBREW_LIB64 := /usr/local/lib
-	HOMEBREW_LIBARM := /opt/homebrew/lib
-	LDLIBS = -lglfw -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
-	ifneq (,$(wildcard $(HOMEBREW_LIB64)/libglfw*))
-		LDLIBS := -L$(HOMEBREW_LIB64) $(LDLIBS)
-	endif
-	ifneq (,$(wildcard $(HOMEBREW_LIBARM)/libglfw*))
-		LDLIBS := -L$(HOMEBREW_LIBARM) $(LDLIBS)
-	endif
-else
-	LDFLAGS = -no-pie
-	LDLIBS	= -ldl
-endif
+%.o: %.cpp
+	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
 
-.cpp.o:
-		${CXX} ${CXXFLAGS} -c $< -o ${<:.cpp=.o} -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
-
-${NAME}: glfw_build ${OBJS}
-	${CXX} ${OBJS} ${STATIC_LIBS} ${CXXFLAGS} ${LDFLAGS} ${LDLIBS} -o ${NAME}
+sdl3_build:
+	@if [ ! -d sdl3 ]; then \
+		echo "Téléchargement de SDL3 3.4.4..."; \
+		curl -L -o SDL3.zip https://www.libsdl.org/release/SDL3-3.4.4.zip; \
+		unzip -q SDL3.zip; \
+		mv SDL3-3.4.4 sdl3; \
+		rm SDL3.zip; \
+	fi
+	@if [ ! -d sdl3/build ]; then \
+		mkdir -p sdl3/build; \
+		cd sdl3/build && cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DSDL_X11_XSCRNSAVER=OFF -DSDL_X11_XTEST=OFF && make -j4; \
+		cd ../../..; \
+	fi
 
 glfw_build:
 	@if [ ! -d glfw-3.4 ]; then \
@@ -54,15 +67,42 @@ glfw_build:
 		cd glfw-3.4/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF && make; \
 	fi
 
-all: ${NAME}
+mlx_build:
+	@if [ ! -d MLX42 ]; then \
+		echo "Clonage de MLX42..."; \
+		git clone https://github.com/codam-coding-college/MLX42.git; \
+	fi
+	@if [ ! -d MLX42/build ]; then \
+		mkdir -p MLX42/build; \
+		cd MLX42/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON && make -j4; \
+		cd ../../..; \
+	fi
+
+${NAME}: sdl3_build glfw_build mlx_build ${OBJS_MAIN}
+	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -rdynamic -o ${NAME}
+
+${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
+	${CXX} ${OBJS_SDL3} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./sdl3/build -L./sdl3_image/build -o ${LIB_SDL3}
+
+${LIB_GL}: glfw_build ${OBJS_GL}
+	${CXX} ${OBJS_GL} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./glfw-3.4/build -o ${LIB_GL}
+
+${LIB_MLX}: mlx_build ${OBJS_MLX}
+	${CXX} ${OBJS_MLX} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./MLX42/build -o ${LIB_MLX}
+
+.DEFAULT_GOAL := all
+
+all: ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
 
 clean:
-		${RM} ${OBJS}
+	${RM} ${OBJS_MAIN} ${OBJS_SDL3} ${OBJS_GL} ${OBJS_MLX}
 
 fclean: clean
-	${RM} ${NAME}
+	${RM} ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
+	${RM} sdl3
 	${RM} glfw-3.4
+	${RM} MLX42
 
 re: fclean all
 
-.PHONY: all clean fclean re glfw_build
+.PHONY: all clean fclean re sdl3_build glfw_build mlx_build
