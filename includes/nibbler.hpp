@@ -8,13 +8,6 @@
 # include "graphiqueGL.hpp"
 # include "graphiqueMLX.hpp"
 
-// Graphics mode enum
-enum GraphicsMode {
-    ONE,
-    TWO,
-    THREE
-};
-
-void drawWindowThree();
+//void drawWindowThree();
 
 #endif

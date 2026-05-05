@@ -1,51 +1,51 @@
 #include "../includes/game.hpp"
 #include "../includes/nibbler.hpp"
 
-class MLXGame {
+class SFMLGame {
     private:
         int _width, _height;
 
     public:
-        MLXGame(int w, int h);
-        ~MLXGame();
+        SFMLGame(int w, int h);
+        ~SFMLGame();
         void display(const Game& game);
         int handleInput();
 };
 
 
-MLXGame::MLXGame(int w, int h) : _width(w), _height(h) {
+SFMLGame::SFMLGame(int w, int h) : _width(w), _height(h) {
     // Initialize OpenMLX context and resources here
 }
 
-MLXGame::~MLXGame() {
+SFMLGame::~SFMLGame() {
     // Clean up OpenMLX resources here
 }
 
-void MLXGame::display(const Game& game) {
+void SFMLGame::display(const Game& game) {
     (void)game; // To avoid unused parameter warning
     // Render the game state using OpenMLX here
 }
 
-int MLXGame::handleInput() {
+int SFMLGame::handleInput() {
     // Handle user input using OpenMLX here
     // Return the appropriate direction or mode based on input
     return 0; // Placeholder return value
 }
 
 extern "C" {
-    void* create_gui_mlx(int width, int height) {
-        return new MLXGame(width, height);
+    void* create_gui_sfml(int width, int height) {
+        return new SFMLGame(width, height);
     }
 
-    void destroy_gui_mlx(void* gui) {
-        delete (MLXGame*)gui;
+    void destroy_gui_sfml(void* gui) {
+        delete (SFMLGame*)gui;
     }
     
-    void display_gui_mlx(void* gui, const Game& game) {
-        ((MLXGame*)gui)->display(game);
+    void display_gui_sfml(void* gui, const Game& game) {
+        ((SFMLGame*)gui)->display(game);
     }
     
-    int input_gui_mlx(void* gui) {
-        return ((MLXGame*)gui)->handleInput();
+    int input_gui_sfml(void* gui) {
+        return ((SFMLGame*)gui)->handleInput();
     }
 }

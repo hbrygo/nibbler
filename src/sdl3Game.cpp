@@ -556,7 +556,7 @@ int SDL3Game::handleInput() {
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
                 std::cerr << "[INPUT] Mode 1" << std::endl;
-                currentLibrary = MLX;
+                currentLibrary = SFML;
                 return 10;  // Increased to avoid UP (1), DOWN (2), etc.
             }
             if (scancode == SDL_SCANCODE_2) {

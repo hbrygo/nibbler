@@ -7,13 +7,13 @@ SRCS_SDL3	=	src/sdl3Game.cpp \
 SRCS_GL		=	src/glGame.cpp \
 				src/game.cpp
 
-SRCS_MLX	=	src/mlxGame.cpp \
+SRCS_SFML	=	src/sfmlGame.cpp \
 				src/game.cpp
 
 OBJS_MAIN	= ${SRCS_MAIN:.cpp=.o}
 OBJS_SDL3	= ${SRCS_SDL3:.cpp=.o}
 OBJS_GL		= ${SRCS_GL:.cpp=.o}
-OBJS_MLX	= ${SRCS_MLX:.cpp=.o}
+OBJS_SFML	= ${SRCS_SFML:.cpp=.o}
 
 CFLAGS += -I$(HOME)/Desktop/nibbler/local/include
 LDFLAGS += -L$(HOME)/Desktop/nibbler/local/lib
@@ -29,7 +29,7 @@ SDL_INC = $(SDL_DIR)/include
 NAME	= nibbler
 LIB_SDL3	= lib_sdl3.so
 LIB_GL		= lib_gl.so
-LIB_MLX		= lib_mlx.so
+LIB_SFML	= lib_sfml.so
 
 CC      = cc
 CXX     = c++
@@ -67,18 +67,21 @@ glfw_build:
 		cd glfw-3.4/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF && make; \
 	fi
 
-mlx_build:
-	@if [ ! -d MLX42 ]; then \
-		echo "Clonage de MLX42..."; \
-		git clone https://github.com/codam-coding-college/MLX42.git; \
+sfml_build:
+	@if [ ! -d sfml-3.1.0 ]; then \
+		echo "Téléchargement de SFML 3.1.0..."; \
+		curl -L -o sfml-3.1.0.tar.gz https://github.com/SFML/SFML/archive/3.1.0.tar.gz; \
+		tar -xzf sfml-3.1.0.tar.gz; \
+		mv SFML-3.1.0 sfml-3.1.0; \
+		rm sfml-3.1.0.tar.gz; \
 	fi
-	@if [ ! -d MLX42/build ]; then \
-		mkdir -p MLX42/build; \
-		cd MLX42/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON && make -j4; \
+	@if [ ! -d sfml-3.1.0/build ]; then \
+		mkdir -p sfml-3.1.0/build; \
+		cd sfml-3.1.0/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSFML_BUILD_GRAPHICS=OFF -DSFML_BUILD_WINDOW=OFF -DSFML_BUILD_NETWORK=OFF -DSFML_BUILD_AUDIO=OFF && make -j4; \
 		cd ../../..; \
 	fi
 
-${NAME}: sdl3_build glfw_build mlx_build ${OBJS_MAIN}
+${NAME}: sdl3_build glfw_build sfml_build ${OBJS_MAIN}
 	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -rdynamic -o ${NAME}
 
 ${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
@@ -87,22 +90,22 @@ ${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
 ${LIB_GL}: glfw_build ${OBJS_GL}
 	${CXX} ${OBJS_GL} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./glfw-3.4/build -o ${LIB_GL}
 
-${LIB_MLX}: mlx_build ${OBJS_MLX}
-	${CXX} ${OBJS_MLX} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./MLX42/build -o ${LIB_MLX}
+${LIB_SFML}: sfml_build ${OBJS_SFML}
+	${CXX} ${OBJS_SFML} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./MLX42/build -o ${LIB_SFML}
 
 .DEFAULT_GOAL := all
 
-all: ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
+all: ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_SFML}
 
 clean:
-	${RM} ${OBJS_MAIN} ${OBJS_SDL3} ${OBJS_GL} ${OBJS_MLX}
+	${RM} ${OBJS_MAIN} ${OBJS_SDL3} ${OBJS_GL} ${OBJS_SFML}
 
 fclean: clean
-	${RM} ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_MLX}
+	${RM} ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_SFML}
 	${RM} sdl3
 	${RM} glfw-3.4
-	${RM} MLX42
+	${RM} sfml-3.1.0
 
 re: fclean all
 
-.PHONY: all clean fclean re sdl3_build glfw_build mlx_build
+.PHONY: all clean fclean re sdl3_build glfw_build sfml_build
