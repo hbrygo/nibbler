@@ -19,16 +19,18 @@ int main(int argc, char** argv) {
         std::cerr << "Usage: " << argv[0] << " <width> <height> <sfml/sdl3/gl>" << std::endl;
         return 1;
     }
-    const char* available_libraries[] = {"sfml", "sdl3", "gl"};
     const char* selected_library = argv[3];
-    for (int i = 0; i < 3; i++) {
+    bool valid_library = false;
+    const char* available_libraries[] = {"sfml", "sdl3", "gl"};
+    for (int i = 0; i < 3; ++i) {
         if (strcmp(selected_library, available_libraries[i]) == 0) {
+            valid_library = true;
             break;
         }
-        if (i == 3) {
-            std::cerr << "Error: Invalid library. Available options are: sfml, sdl3, gl" << std::endl;
-            return 1;
-        }
+    }
+    if (!valid_library) {
+        std::cerr << "Error: Invalid library. Available options are: sfml, sdl3, gl" << std::endl;
+        return 1;
     }
 
     currentLibrary = (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML : 
@@ -42,7 +44,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Charger la première librairie graphique
     void* gui = nullptr;
     void* handle = nullptr;
     create_t create_gui = nullptr;
@@ -50,8 +51,18 @@ int main(int argc, char** argv) {
     display_t display_gui = nullptr;
     input_t input_gui = nullptr;
 
-    auto load_lib = [&](const char* lib_so, int currentLibrary) -> bool {
-        const char* expected_suffix = (currentLibrary == SFML) ? "sfml" : (currentLibrary == SDL3) ? "sdl3" : "gl";
+    auto lib_path_for_mode = [](int mode) -> const char* {
+        if (mode == SFML) {
+            return "./lib_sfml.so";
+        }
+        if (mode == SDL3) {
+            return "./lib_sdl3.so";
+        }
+        return "./lib_gl.so";
+    };
+
+    auto load_lib = [&](const char* lib_so, int mode) -> bool {
+        const char* expected_suffix = (mode == SFML) ? "sfml" : (mode == SDL3) ? "sdl3" : "gl";
         const std::string create_symbol = std::string("create_gui_") + expected_suffix;
         const std::string destroy_symbol = std::string("destroy_gui_") + expected_suffix;
         const std::string display_symbol = std::string("display_gui_") + expected_suffix;
@@ -82,8 +93,7 @@ int main(int argc, char** argv) {
         return true;
     };
 
-    // Charger la première lib (SDL3 par défaut)
-    if (!load_lib("./lib_sdl3.so", currentLibrary)) {
+    if (!load_lib(lib_path_for_mode(currentLibrary), currentLibrary)) {
         return 1;
     }
 
@@ -96,9 +106,9 @@ int main(int argc, char** argv) {
         
         int input = input_gui(gui);
         if (input == -1) running = false; // ESC
-        else if (input == 10 && !load_lib("./lib_sdl3.so", currentLibrary)) running = false;  // Mode 1 (was 1)
-        // else if (input == 20 && !load_lib("./lib_other.so", currentLibrary)) running = false;  // Mode 2 (was 2)
-        // else if (input == 30 && !load_lib("./lib_third.so", currentLibrary)) running = false;  // Mode 3 (was 3)
+        else if (input == 10 && !load_lib(lib_path_for_mode(SFML), SFML)) running = false;
+        else if (input == 20 && !load_lib(lib_path_for_mode(SDL3), SDL3)) running = false;
+        else if (input == 30 && !load_lib(lib_path_for_mode(GL), GL)) running = false;
         else if (input == UP) game.changeDirection(UP);
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
