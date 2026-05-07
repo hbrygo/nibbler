@@ -14,6 +14,8 @@ class SFMLGame {
 
 
 SFMLGame::SFMLGame(int w, int h) : _width(w), _height(h) {
+    (void)_width;
+    (void)_height;
     // Initialize OpenMLX context and resources here
 }
 

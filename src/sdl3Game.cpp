@@ -30,12 +30,10 @@ struct SDL_KeyboardEvent {
 };
 
 // SDL3 event structure with union (correct from SDL3 headers)
-struct SDL_Event {
+union SDL_Event {
     unsigned int type;
-    union {
-        SDL_KeyboardEvent key;
-        char padding[128];
-    };
+    SDL_KeyboardEvent key;
+    char padding[128];
 };
 
 // SDL3 event types
@@ -48,10 +46,24 @@ struct SDL_Event {
 #define SDL_SCANCODE_RIGHT 0x4F
 #define SDL_SCANCODE_UP 0x52
 #define SDL_SCANCODE_DOWN 0x51
+#define SDL_SCANCODE_W 0x11
+#define SDL_SCANCODE_A 0x1E
+#define SDL_SCANCODE_S 0x1F
+#define SDL_SCANCODE_D 0x20
 #define SDL_SCANCODE_ESCAPE 0x29
-#define SDL_SCANCODE_1 0x1E
-#define SDL_SCANCODE_2 0x1F
-#define SDL_SCANCODE_3 0x20
+#define SDL_SCANCODE_1 0x02
+#define SDL_SCANCODE_2 0x03
+#define SDL_SCANCODE_3 0x04
+
+#define SDLK_ESCAPE 0x0000001Bu
+#define SDLK_RIGHT 0x4000004Fu
+#define SDLK_LEFT 0x40000050u
+#define SDLK_DOWN 0x40000051u
+#define SDLK_UP 0x40000052u
+#define SDLK_W 0x00000077u
+#define SDLK_A 0x00000061u
+#define SDLK_S 0x00000073u
+#define SDLK_D 0x00000064u
 
 #define SDL_BLENDMODE_BLEND 0x00000001u
 #define SDL_BLENDMODE_BLEND_PREMULTIPLIED 0x00000010u
@@ -121,9 +133,12 @@ class SDL3Game {
         SDL_Renderer* _renderer;
         int _width, _height;
         SDL_Texture* _snakeUpDownTexture;
+        SDL_Texture* _snakeUpDownTexture2;
         SDL_Texture* _snakeLeftRightTexture;
+        SDL_Texture* _snakeLeftRightTexture2;
         SDL_Texture* _snakeTurnRightTexture;
         SDL_Texture* _snakeTurnLeftTexture;
+        SDL_Texture* _snakeTurnLeftTexture2;
         SDL_Texture* _foodTexture;
         SDL_Texture* _backgroundTexture;
         SDL_Texture* _wallTexture;
@@ -132,7 +147,7 @@ class SDL3Game {
         SDL3Game(int w, int h);
         ~SDL3Game();
         void display(const Game& game);
-        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody);
+        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, int player);
         int handleInput();
 };
 
@@ -189,9 +204,11 @@ static bool load_sdl3_symbols() {
 }
 
 SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(w), _height(h),
-    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
-    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr) {
+    _snakeUpDownTexture(nullptr), _snakeUpDownTexture2(nullptr), _snakeLeftRightTexture(nullptr), _snakeLeftRightTexture2(nullptr), _snakeTurnRightTexture(nullptr),
+    _snakeTurnLeftTexture(nullptr), _snakeTurnLeftTexture2(nullptr), _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr) {
     
+    (void)_width;
+    (void)_height;
     if (!load_sdl3_symbols()) {
         return;
     }
@@ -297,6 +314,38 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         std::cerr << "[SDL3] Error: Unable to load wall.bmp" << std::endl;
     }
     
+    // player 2 textures
+
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_right_left-1.png.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeLeftRightTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeLeftRightTexture2) SDL_SetTextureBlendMode_ptr(_snakeLeftRightTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_right_left-1.png.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_up_down-1.png.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeUpDownTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeUpDownTexture2) SDL_SetTextureBlendMode_ptr(_snakeUpDownTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_up_down-1.png.bmp" << std::endl;
+    }
+    
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake_turn_left-1.png.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeTurnLeftTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeTurnLeftTexture2) SDL_SetTextureBlendMode_ptr(_snakeTurnLeftTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    } else {
+        std::cerr << "[SDL3] Error: Unable to load snake_turn_left-1.png.bmp" << std::endl;
+    }
+    
     std::cerr << "[SDL3] BMP textures loaded successfully" << std::endl;
 }
 
@@ -311,6 +360,9 @@ SDL3Game::~SDL3Game() {
     if (_wallTexture) SDL_DestroyTexture_ptr(_wallTexture);
     if (_renderer) SDL_DestroyRenderer_ptr(_renderer);
     if (_window) SDL_DestroyWindow_ptr(_window);
+    if (_snakeUpDownTexture2) SDL_DestroyTexture_ptr(_snakeUpDownTexture2);
+    if (_snakeLeftRightTexture2) SDL_DestroyTexture_ptr(_snakeLeftRightTexture2);
+    if (_snakeTurnLeftTexture2) SDL_DestroyTexture_ptr(_snakeTurnLeftTexture2);
     SDL_Quit_ptr();
 }
 
@@ -374,7 +426,7 @@ SDL3Game::~SDL3Game() {
 //     }
 // }
 
-void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody) {
+void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, int player) {
     auto renderRotated = [&](SDL_Texture* texture, double angle) {
         SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
         SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
@@ -394,15 +446,18 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
 
         // HEAD
         if (i == 0) {
+            SDL_Texture* headTexture = nullptr;
             double angle = 0.0;
-            if (currentDirection == LEFT) {
-                angle = 180.0;
-            } else if (currentDirection == UP) {
-                angle = 270.0;
-            } else if (currentDirection == DOWN) {
-                angle = 90.0;
+
+            if (currentDirection == LEFT || currentDirection == RIGHT) {
+                headTexture = (player == 1) ? _snakeLeftRightTexture : _snakeLeftRightTexture2;
+                angle = (currentDirection == LEFT) ? 180.0 : 0.0;
+            } else {
+                headTexture = (player == 1) ? _snakeUpDownTexture : _snakeUpDownTexture2;
+                angle = (currentDirection == DOWN) ? 180.0 : 0.0;
             }
-            renderRotated(_snakeLeftRightTexture, angle);
+
+            renderRotated(headTexture, angle);
         }
 
         // TAIL (optionnel à compléter)
@@ -411,7 +466,11 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
             auto tail = snakeBody[i];
             int dx = tail.first - prev.first;
             int dy = tail.second - prev.second;
-            renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx, dy));
+            if (player == 1) {
+                renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx, dy));
+            } else {
+                renderRotated(_snakeLeftRightTexture2, segmentAngleFromDelta(dx, dy));
+            }
         }
 
         // BODY
@@ -428,7 +487,11 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
 
             // -------- STRAIGHT --------
             if ((dx1 == dx2) && (dy1 == dy2)) {
-                renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx1, dy1));
+                if (player == 1) {
+                    renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx1, dy1));
+                } else {
+                    renderRotated(_snakeLeftRightTexture2, segmentAngleFromDelta(dx1, dy1));
+                }
             }
 
             // -------- TURN --------
@@ -437,16 +500,10 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
                 double angle = 0.0;
                 SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
 
-                // Ta référence:
-                // snake_turn_left = coin (haut + gauche)
-                // snake_turn_right = coin (bas + gauche)
+                texture = (player == 1) ? _snakeTurnLeftTexture : _snakeTurnLeftTexture2;
 
-                // On utilise UNE seule base et on la tourne
-                texture = _snakeTurnLeftTexture;
-
-                // Cas des 4 coins
                 if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) {
-                    angle = 270; // OK orientation de base
+                    angle = 270;
                 }
                 else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) {
                     angle = 180;
@@ -457,9 +514,9 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
                 else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) {
                     angle = 0;
                 } else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) {
-                    angle = 90; // OK orientation de base
+                    angle = 90;
                 } else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) {
-                    angle = 0; // OK orientation de base
+                    angle = 0;
                 } else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) {
                     angle = 180;
                 } else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) {
@@ -511,7 +568,11 @@ void SDL3Game::display(const Game& game) {
 
     if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
         SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
-        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody());
+        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody(), 1);
+    }
+    if (game.getNbPlayer() == 2 && _snakeUpDownTexture2 && _snakeLeftRightTexture2 && _snakeTurnLeftTexture2) {
+        SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
+        display_good_part(snakeRect, game.getCurrentDirection2(), game.getSnakeBody2(), 2);
     }
 
     SDL_RenderPresent_ptr(_renderer);
@@ -527,31 +588,48 @@ int SDL3Game::handleInput() {
         }
         
         if (event.type == SDL_EVENT_KEY_DOWN) {
-            // Direct access to scancode at offset 24 in the structure
-            unsigned char* bytes = (unsigned char*)&event;
-            int scancode = *(int*)(bytes + 24);  // offset 24 = scancode (little-endian int)
-            std::cerr << "[SDL3] KEY_DOWN - scancode: " << scancode << std::endl;
+            int scancode = event.key.scancode;
+            int keycode = event.key.keycode;
+            std::cerr << "[SDL3] KEY_DOWN - scancode: " << scancode << " keycode: " << keycode << std::endl;
             
-            if (scancode == SDL_SCANCODE_ESCAPE) {
+            if (keycode == SDLK_ESCAPE || scancode == SDL_SCANCODE_ESCAPE) {
                 std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
                 return -1;
             }
-            // Arrow keys
-            if (scancode == SDL_SCANCODE_LEFT) {
+            // Arrow keys for player 1
+            if (keycode == SDLK_LEFT || scancode == SDL_SCANCODE_LEFT) {
                 std::cerr << "[INPUT] LEFT detected -> returning " << LEFT << std::endl;
                 return LEFT;
             }
-            if (scancode == SDL_SCANCODE_RIGHT) {
+            if (keycode == SDLK_RIGHT || scancode == SDL_SCANCODE_RIGHT) {
                 std::cerr << "[INPUT] RIGHT detected -> returning " << RIGHT << std::endl;
                 return RIGHT;
             }
-            if (scancode == SDL_SCANCODE_UP) {
+            if (keycode == SDLK_UP || scancode == SDL_SCANCODE_UP) {
                 std::cerr << "[INPUT] UP detected -> returning " << UP << std::endl;
                 return UP;
             }
-            if (scancode == SDL_SCANCODE_DOWN) {
+            if (keycode == SDLK_DOWN || scancode == SDL_SCANCODE_DOWN) {
                 std::cerr << "[INPUT] DOWN detected -> returning " << DOWN << std::endl;
                 return DOWN;
+            }
+
+            // WASD for player 2
+            if (keycode == SDLK_A || scancode == SDL_SCANCODE_A) {
+                std::cerr << "[INPUT] P2 LEFT detected -> returning 110" << std::endl;
+                return 110;
+            }
+            if (keycode == SDLK_D || scancode == SDL_SCANCODE_D) {
+                std::cerr << "[INPUT] P2 RIGHT detected -> returning 111" << std::endl;
+                return 111;
+            }
+            if (keycode == SDLK_W || scancode == SDL_SCANCODE_W) {
+                std::cerr << "[INPUT] P2 UP detected -> returning 112" << std::endl;
+                return 112;
+            }
+            if (keycode == SDLK_S || scancode == SDL_SCANCODE_S) {
+                std::cerr << "[INPUT] P2 DOWN detected -> returning 113" << std::endl;
+                return 113;
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {

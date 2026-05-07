@@ -15,20 +15,22 @@ typedef void (*display_t)(void*, const Game&);
 typedef int (*input_t)(void*);
 
 int main(int argc, char** argv) {
-    if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <width> <height> <sfml/sdl3/gl>" << std::endl;
+    if (argc != 4 && argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <sfml/sdl3/gl> [player=1|2]" << std::endl;
         return 1;
     }
     const char* available_libraries[] = {"sfml", "sdl3", "gl"};
     const char* selected_library = argv[3];
+    bool valid_library = false;
     for (int i = 0; i < 3; i++) {
         if (strcmp(selected_library, available_libraries[i]) == 0) {
+            valid_library = true;
             break;
         }
-        if (i == 3) {
-            std::cerr << "Error: Invalid library. Available options are: sfml, sdl3, gl" << std::endl;
-            return 1;
-        }
+    }
+    if (!valid_library) {
+        std::cerr << "Error: Invalid library. Available options are: sfml, sdl3, gl" << std::endl;
+        return 1;
     }
 
     currentLibrary = (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML : 
@@ -40,6 +42,19 @@ int main(int argc, char** argv) {
     if (width <= 9 || height <= 9 || width > 100 || height > 100) {
         std::cerr << "Error: Invalid width or height" << std::endl;
         return 1;
+    }
+
+    int nbPlayer = 1;
+    if (argc == 5) {
+        if (strcmp(argv[4], "1") != 0 && strcmp(argv[4], "2") != 0) {
+            std::cerr << "Error: Invalid number of players. Available options are: 1, 2" << std::endl;
+            return 1;
+        }
+        nbPlayer = std::atoi(argv[4]);
+        if (nbPlayer != 1 && nbPlayer != 2) {
+            std::cerr << "Error: Invalid number of players. Available options are: 1, 2" << std::endl;
+            return 1;
+        }
     }
 
     // Charger la première librairie graphique
@@ -87,7 +102,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    Game game(width, height);
+    Game game(height, width, nbPlayer);
     bool running = true;
 	auto last_move = std::chrono::high_resolution_clock::now();
 
@@ -103,12 +118,17 @@ int main(int argc, char** argv) {
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
         else if (input == RIGHT) game.changeDirection(RIGHT);
+        else if (nbPlayer == 2 && input == 110) game.changeDirection2(LEFT);
+        else if (nbPlayer == 2 && input == 111) game.changeDirection2(RIGHT);
+        else if (nbPlayer == 2 && input == 112) game.changeDirection2(UP);
+        else if (nbPlayer == 2 && input == 113) game.changeDirection2(DOWN);
 
         auto now = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
         
         if (elapsed >= TICK_RATE) {
             if (game.moveSnake() == -1) running = false; // Collision
+            if (nbPlayer == 2 && game.moveSnake2() == -1) running = false; // Collision
             last_move = now;
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
