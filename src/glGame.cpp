@@ -14,6 +14,8 @@ class GLGame {
 
 
 GLGame::GLGame(int w, int h) : _width(w), _height(h) {
+    (void)_width;
+    (void)_height;
     // Initialize OpenGL context and resources here
 }
 

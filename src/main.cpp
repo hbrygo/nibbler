@@ -82,8 +82,10 @@ int main(int argc, char** argv) {
         return true;
     };
 
-    // Charger la première lib (SDL3 par défaut)
-    if (!load_lib("./lib_sdl3.so", currentLibrary)) {
+    // Charger la première lib (selon la sélection de l'utilisateur)
+    const char* lib_so = (currentLibrary == SFML) ? "./lib_sfml.so" : 
+                        (currentLibrary == SDL3) ? "./lib_sdl3.so" : "./lib_gl.so";
+    if (!load_lib(lib_so, currentLibrary)) {
         return 1;
     }
 
@@ -96,9 +98,9 @@ int main(int argc, char** argv) {
         
         int input = input_gui(gui);
         if (input == -1) running = false; // ESC
-        else if (input == 10 && !load_lib("./lib_sdl3.so", currentLibrary)) running = false;  // Mode 1 (was 1)
-        // else if (input == 20 && !load_lib("./lib_other.so", currentLibrary)) running = false;  // Mode 2 (was 2)
-        // else if (input == 30 && !load_lib("./lib_third.so", currentLibrary)) running = false;  // Mode 3 (was 3)
+        else if (input == 10 && !load_lib("./lib_sfml.so", SFML)) running = false;  // Mode 1 (SFML)
+        else if (input == 20 && !load_lib("./lib_sdl3.so", SDL3)) running = false;  // Mode 2 (SDL3)
+        else if (input == 30 && !load_lib("./lib_gl.so", GL)) running = false;  // Mode 3 (GL)
         else if (input == UP) game.changeDirection(UP);
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
