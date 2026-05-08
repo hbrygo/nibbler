@@ -154,14 +154,11 @@ class SDL3Game {
 static bool load_sdl3_symbols() {
     if (initialized) return true;
     
-    std::cerr << "[SDL3] Loading SDL3..." << std::endl;
     sdl_handle = dlopen("./sdl3/build/libSDL3.so", RTLD_NOW | RTLD_GLOBAL);
     if (!sdl_handle) {
         std::cerr << "[SDL3] Error: Unable to load libSDL3 - " << dlerror() << std::endl;
         return false;
     }
-    
-    std::cerr << "[SDL3] ✓ libSDL3 loaded successfully" << std::endl;
     
     // Load function pointers from SDL3
     SDL_Init_ptr = (PFNSDLINITPROC)dlsym(sdl_handle, "SDL_Init");
@@ -199,7 +196,6 @@ static bool load_sdl3_symbols() {
     }
     
     initialized = true;
-    std::cerr << "[SDL3] SDL3 symbols loaded successfully" << std::endl;
     return true;
 }
 
@@ -217,8 +213,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         std::cerr << "[SDL3] SDL_Init failed: " << SDL_GetError_ptr() << std::endl;
         return;
     }
-    
-    std::cerr << "[SDL3] SDL_Init VIDEO succeeded" << std::endl;
 
     // Create window with appropriate size
     int window_width = (w * 32 > 400) ? w * 32 : 400;
@@ -233,12 +227,9 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         return;
     }
     
-    std::cerr << "[SDL3] Window and renderer created" << std::endl;
-    
     // Capture window focus to avoid system shortcuts
     if (SDL_SetWindowInputFocus_ptr) {
         SDL_SetWindowInputFocus_ptr(_window);
-        std::cerr << "[SDL3] Window input focus set" << std::endl;
     }
     
     // Load BMP textures from textureSDL3/ directory
@@ -346,7 +337,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         std::cerr << "[SDL3] Error: Unable to load snake_turn_left-1.png.bmp" << std::endl;
     }
     
-    std::cerr << "[SDL3] BMP textures loaded successfully" << std::endl;
 }
 
 SDL3Game::~SDL3Game() {
@@ -433,14 +423,16 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
     };
 
     for (size_t i = 0; i < snakeBody.size(); ++i) {
-        rect.x = static_cast<float>(snakeBody[i].first * 32);
-        rect.y = static_cast<float>(snakeBody[i].second * 32);
+        rect.x = static_cast<float>(snakeBody[i].second * 32);
+        rect.y = static_cast<float>(snakeBody[i].first * 32);
 
         auto segmentAngleFromDelta = [](int dx, int dy) -> double {
-            if (dx == 1) return 0.0;
-            if (dx == -1) return 180.0;
-            if (dy == 1) return 90.0;
-            if (dy == -1) return 270.0;
+            // dx = delta row, dy = delta col
+            // UP/DOWN movement (dx != 0): vertical texture, 90° rotation
+            // LEFT/RIGHT movement (dy != 0): horizontal texture
+            if (dx == 1 || dx == -1) return 90.0;     // UP or DOWN: rotate to vertical
+            if (dy == 1) return 0.0;                   // RIGHT: horizontal as-is
+            if (dy == -1) return 180.0;                // LEFT: horizontal flipped
             return 0.0;
         };
 
@@ -503,24 +495,24 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
                 texture = (player == 1) ? _snakeTurnLeftTexture : _snakeTurnLeftTexture2;
 
                 if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) {
-                    angle = 270;
+                    angle = 90;
                 }
                 else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) {
                     angle = 180;
                 }
                 else if (dx1 == 0 && dy1 == 1 && dx2 == 1 && dy2 == 0) {
-                    angle = 90;
+                    angle = 270;
                 }
                 else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) {
                     angle = 0;
                 } else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) {
-                    angle = 90;
+                    angle = 270;
                 } else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) {
                     angle = 0;
                 } else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) {
                     angle = 180;
                 } else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) {
-                    angle = 270;
+                    angle = 90;
                 }
 
                 SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
@@ -544,7 +536,7 @@ void SDL3Game::display(const Game& game) {
                 SDL_RenderFillRect_ptr(_renderer, &rect);
             }
             
-            int cell = game.getCell(x, y);
+            int cell = game.getCell(y, x);
             if (cell == FOOD) {
                 // Display food texture (fallback: red square)
                 if (_foodTexture) {
@@ -554,7 +546,6 @@ void SDL3Game::display(const Game& game) {
                     SDL_RenderFillRect_ptr(_renderer, &rect);
                 }
             } else if (cell == WALL) {
-                std::cout << "[SDL3] Drawing wall at (" << x << ", " << y << ")" << std::endl;
                 // Display wall texture (fallback: gray square)
                 if (_wallTexture) {
                     SDL_RenderTexture_ptr(_renderer, _wallTexture, nullptr, &rect);
@@ -583,67 +574,53 @@ int SDL3Game::handleInput() {
     
     while (SDL_PollEvent_ptr(&event)) {
         if (event.type == SDL_EVENT_QUIT) {
-            std::cerr << "[SDL3] SDL_EVENT_QUIT received" << std::endl;
             return -1;
         }
-        
+
         if (event.type == SDL_EVENT_KEY_DOWN) {
             int scancode = event.key.scancode;
             int keycode = event.key.keycode;
-            std::cerr << "[SDL3] KEY_DOWN - scancode: " << scancode << " keycode: " << keycode << std::endl;
-            
+
             if (keycode == SDLK_ESCAPE || scancode == SDL_SCANCODE_ESCAPE) {
-                std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
                 return -1;
             }
             // Arrow keys for player 1
             if (keycode == SDLK_LEFT || scancode == SDL_SCANCODE_LEFT) {
-                std::cerr << "[INPUT] LEFT detected -> returning " << LEFT << std::endl;
                 return LEFT;
             }
             if (keycode == SDLK_RIGHT || scancode == SDL_SCANCODE_RIGHT) {
-                std::cerr << "[INPUT] RIGHT detected -> returning " << RIGHT << std::endl;
                 return RIGHT;
             }
             if (keycode == SDLK_UP || scancode == SDL_SCANCODE_UP) {
-                std::cerr << "[INPUT] UP detected -> returning " << UP << std::endl;
                 return UP;
             }
             if (keycode == SDLK_DOWN || scancode == SDL_SCANCODE_DOWN) {
-                std::cerr << "[INPUT] DOWN detected -> returning " << DOWN << std::endl;
                 return DOWN;
             }
 
             // WASD for player 2
             if (keycode == SDLK_A || scancode == SDL_SCANCODE_A) {
-                std::cerr << "[INPUT] P2 LEFT detected -> returning 110" << std::endl;
                 return 110;
             }
             if (keycode == SDLK_D || scancode == SDL_SCANCODE_D) {
-                std::cerr << "[INPUT] P2 RIGHT detected -> returning 111" << std::endl;
                 return 111;
             }
             if (keycode == SDLK_W || scancode == SDL_SCANCODE_W) {
-                std::cerr << "[INPUT] P2 UP detected -> returning 112" << std::endl;
                 return 112;
             }
             if (keycode == SDLK_S || scancode == SDL_SCANCODE_S) {
-                std::cerr << "[INPUT] P2 DOWN detected -> returning 113" << std::endl;
                 return 113;
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
-                std::cerr << "[INPUT] Mode 1" << std::endl;
                 currentLibrary = SFML;
                 return 10;  // Increased to avoid UP (1), DOWN (2), etc.
             }
             if (scancode == SDL_SCANCODE_2) {
-                std::cerr << "[INPUT] Mode 2" << std::endl;
                 currentLibrary = SDL3;
                 return 20;
             }
             if (scancode == SDL_SCANCODE_3) {
-                std::cerr << "[INPUT] Mode 3" << std::endl;
                 currentLibrary = GL;
                 return 30;
             }

@@ -52,6 +52,7 @@ Game& Game::operator=(const Game& other) {
         _currentDirection = other._currentDirection;
         _currentDirection2 = other._currentDirection2;
         _wallPosition = other._wallPosition;
+        _nbPlayer = other._nbPlayer;
         _rng = other._rng;
     }
     return *this;
@@ -215,13 +216,13 @@ int Game::moveSnake() {
     std::pair<int, int> newHead = _snakeBody.front();
 
     if (_currentDirection == UP) {
-        newHead.second -= 1;
-    } else if (_currentDirection == DOWN) {
-        newHead.second += 1;
-    } else if (_currentDirection == LEFT) {
         newHead.first -= 1;
-    } else if (_currentDirection == RIGHT) {
+    } else if (_currentDirection == DOWN) {
         newHead.first += 1;
+    } else if (_currentDirection == LEFT) {
+        newHead.second -= 1;
+    } else if (_currentDirection == RIGHT) {
+        newHead.second += 1;
     } else {
         return 0;
     }
@@ -257,13 +258,13 @@ int Game::moveSnake2() {
     std::pair<int, int> newHead = _snakeBody2.front();
 
     if (_currentDirection2 == UP) {
-        newHead.second -= 1;
-    } else if (_currentDirection2 == DOWN) {
-        newHead.second += 1;
-    } else if (_currentDirection2 == LEFT) {
         newHead.first -= 1;
-    } else if (_currentDirection2 == RIGHT) {
+    } else if (_currentDirection2 == DOWN) {
         newHead.first += 1;
+    } else if (_currentDirection2 == LEFT) {
+        newHead.second -= 1;
+    } else if (_currentDirection2 == RIGHT) {
+        newHead.second += 1;
     } else {
         return 0;
     }
