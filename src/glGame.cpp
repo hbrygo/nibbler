@@ -2,6 +2,7 @@
 #include "../includes/nibbler.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <dlfcn.h>
 #include <iostream>
 #include <map>
@@ -10,6 +11,7 @@
 #define GL_PROJECTION 0x1701
 #define GL_MODELVIEW 0x1700
 #define GL_QUADS 0x0007
+#define GL_LINES 0x0001
 
 typedef void (*PFNGLCLEARCOLORPROC)(float, float, float, float);
 typedef void (*PFNGLCLEARPROC)(unsigned int);
@@ -34,6 +36,7 @@ typedef int (*PFNGLFWWINDOWSHOULDCLOSEPROC)(GLFWwindow*);
 typedef void (*PFNGLFWSETWINDOWSHOULDCLOSEPROC)(GLFWwindow*, int);
 typedef GLFWkeyfun (*PFNGLFWSETKEYCALLBACKPROC)(GLFWwindow*, GLFWkeyfun);
 typedef void (*PFNGLFWGETFRAMEBUFFERSIZEPROC)(GLFWwindow*, int*, int*);
+typedef void (*PFNGLFWSETWINDOWSIZELIMITSPROC)(GLFWwindow*, int, int, int, int);
 
 static void* gl_handle = nullptr;
 static void* glfw_handle = nullptr;
@@ -63,6 +66,7 @@ static PFNGLFWWINDOWSHOULDCLOSEPROC glfwWindowShouldClose_ptr = nullptr;
 static PFNGLFWSETWINDOWSHOULDCLOSEPROC glfwSetWindowShouldClose_ptr = nullptr;
 static PFNGLFWSETKEYCALLBACKPROC glfwSetKeyCallback_ptr = nullptr;
 static PFNGLFWGETFRAMEBUFFERSIZEPROC glfwGetFramebufferSize_ptr = nullptr;
+static PFNGLFWSETWINDOWSIZELIMITSPROC glfwSetWindowSizeLimits_ptr = nullptr;
 
 static std::map<int, bool> edge_pressed;
 static bool close_requested = false;
@@ -134,6 +138,7 @@ static bool load_glfw_gl_symbols() {
     glfwSetWindowShouldClose_ptr = reinterpret_cast<PFNGLFWSETWINDOWSHOULDCLOSEPROC>(dlsym(glfw_handle, "glfwSetWindowShouldClose"));
     glfwSetKeyCallback_ptr = reinterpret_cast<PFNGLFWSETKEYCALLBACKPROC>(dlsym(glfw_handle, "glfwSetKeyCallback"));
     glfwGetFramebufferSize_ptr = reinterpret_cast<PFNGLFWGETFRAMEBUFFERSIZEPROC>(dlsym(glfw_handle, "glfwGetFramebufferSize"));
+    glfwSetWindowSizeLimits_ptr = reinterpret_cast<PFNGLFWSETWINDOWSIZELIMITSPROC>(dlsym(glfw_handle, "glfwSetWindowSizeLimits"));
 
     glClearColor_ptr = reinterpret_cast<PFNGLCLEARCOLORPROC>(dlsym(gl_handle, "glClearColor"));
     glClear_ptr = reinterpret_cast<PFNGLCLEARPROC>(dlsym(gl_handle, "glClear"));
@@ -149,7 +154,8 @@ static bool load_glfw_gl_symbols() {
     if (!glfwInit_ptr || !glfwTerminate_ptr || !glfwCreateWindow_ptr || !glfwDestroyWindow_ptr ||
         !glfwMakeContextCurrent_ptr || !glfwSwapInterval_ptr || !glfwSwapBuffers_ptr ||
         !glfwPollEvents_ptr || !glfwWindowShouldClose_ptr || !glfwSetWindowShouldClose_ptr ||
-        !glfwSetKeyCallback_ptr || !glfwGetFramebufferSize_ptr || !glClearColor_ptr || !glClear_ptr ||
+        !glfwSetKeyCallback_ptr || !glfwGetFramebufferSize_ptr || !glfwSetWindowSizeLimits_ptr ||
+        !glClearColor_ptr || !glClear_ptr ||
         !glViewport_ptr || !glMatrixMode_ptr || !glLoadIdentity_ptr || !glOrtho_ptr ||
         !glBegin_ptr || !glEnd_ptr || !glColor3f_ptr || !glVertex2f_ptr) {
         std::cerr << "[GL] Missing required OpenGL/GLFW symbols" << std::endl;
@@ -163,10 +169,14 @@ static bool load_glfw_gl_symbols() {
 
 class GLGame {
     private:
+        static const int WINDOW_WIDTH = 1280;
+        static const int WINDOW_HEIGHT = 720;
+
         GLFWwindow* _window;
         int _width;
         int _height;
         int _cell_size;
+        Direction _lastDirection;
 
         void drawRect(float x, float y, float w, float h, float r, float g, float b) const {
             glColor3f_ptr(r, g, b);
@@ -178,6 +188,376 @@ class GLGame {
             glEnd_ptr();
         }
 
+        void drawQuad(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3,
+                      float r, float g, float b) const {
+            glColor3f_ptr(r, g, b);
+            glBegin_ptr(GL_QUADS);
+            glVertex2f_ptr(x0, y0);
+            glVertex2f_ptr(x1, y1);
+            glVertex2f_ptr(x2, y2);
+            glVertex2f_ptr(x3, y3);
+            glEnd_ptr();
+        }
+
+        void drawLine(float x0, float y0, float x1, float y1, float r, float g, float b) const {
+            glColor3f_ptr(r, g, b);
+            glBegin_ptr(GL_LINES);
+            glVertex2f_ptr(x0, y0);
+            glVertex2f_ptr(x1, y1);
+            glEnd_ptr();
+        }
+
+        static bool isSolidCell(const Game& game, int x, int y) {
+            const int cell = game.getCell(x, y);
+            return cell == SNAKE || cell == WALL || cell == FOOD;
+        }
+
+        void renderProjectedFloorGrid(double posX, double posY, double dirX, double dirY, int fbw, int fbh) const {
+            struct ProjectedTile {
+                float x0;
+                float y0;
+                float x1;
+                float y1;
+                float x2;
+                float y2;
+                float x3;
+                float y3;
+                float depth;
+                bool major;
+                bool checker;
+            };
+
+            const int majorStep = 5;
+            const float horizon = static_cast<float>(fbh) * 0.5f;
+            const float halfW = static_cast<float>(fbw) * 0.5f;
+            const float projX = static_cast<float>(fbw) / (2.0f * 0.66f);
+            const float projY = static_cast<float>(fbh) / (2.0f * 0.66f);
+            const double camHeight = 0.5;
+
+            const double rightX = -dirY;
+            const double rightY = dirX;
+
+            std::vector<ProjectedTile> tiles;
+            tiles.reserve(static_cast<size_t>(_width) * static_cast<size_t>(_height));
+
+            for (int y = 0; y < _height; ++y) {
+                for (int x = 0; x < _width; ++x) {
+                    const double wx[4] = {
+                        static_cast<double>(x),
+                        static_cast<double>(x + 1),
+                        static_cast<double>(x + 1),
+                        static_cast<double>(x)
+                    };
+                    const double wy[4] = {
+                        static_cast<double>(y),
+                        static_cast<double>(y),
+                        static_cast<double>(y + 1),
+                        static_cast<double>(y + 1)
+                    };
+
+                    double depth[4];
+                    float sx[4];
+                    float sy[4];
+                    bool visible = true;
+
+                    for (int i = 0; i < 4; ++i) {
+                        const double relX = wx[i] - posX;
+                        const double relY = wy[i] - posY;
+                        depth[i] = relX * dirX + relY * dirY;
+                        if (depth[i] <= 0.08) {
+                            visible = false;
+                            break;
+                        }
+
+                        const double side = relX * rightX + relY * rightY;
+                        sx[i] = halfW + static_cast<float>((side / depth[i]) * static_cast<double>(projX));
+                        sy[i] = horizon + static_cast<float>((camHeight / depth[i]) * static_cast<double>(projY));
+                    }
+
+                    if (!visible) {
+                        continue;
+                    }
+
+                    const float maxY = std::max(std::max(sy[0], sy[1]), std::max(sy[2], sy[3]));
+                    const float minY = std::min(std::min(sy[0], sy[1]), std::min(sy[2], sy[3]));
+                    const float maxX = std::max(std::max(sx[0], sx[1]), std::max(sx[2], sx[3]));
+                    const float minX = std::min(std::min(sx[0], sx[1]), std::min(sx[2], sx[3]));
+
+                    if (maxY < horizon + 1.0f || minY > static_cast<float>(fbh) ||
+                        maxX < 0.0f || minX > static_cast<float>(fbw)) {
+                        continue;
+                    }
+
+                    ProjectedTile tile;
+                    tile.x0 = sx[0];
+                    tile.y0 = sy[0];
+                    tile.x1 = sx[1];
+                    tile.y1 = sy[1];
+                    tile.x2 = sx[2];
+                    tile.y2 = sy[2];
+                    tile.x3 = sx[3];
+                    tile.y3 = sy[3];
+                    tile.depth = static_cast<float>((depth[0] + depth[1] + depth[2] + depth[3]) * 0.25);
+                    tile.major = (x % majorStep == 0) || (y % majorStep == 0);
+                    tile.checker = ((x + y) % 2 == 0);
+                    tiles.push_back(tile);
+                }
+            }
+
+            std::sort(tiles.begin(), tiles.end(), [](const ProjectedTile& a, const ProjectedTile& b) {
+                return a.depth > b.depth;
+            });
+
+            for (size_t i = 0; i < tiles.size(); ++i) {
+                const ProjectedTile& tile = tiles[i];
+                const float shade = std::max(0.18f, 1.0f / (1.0f + tile.depth * 0.07f));
+                const float checker = tile.checker ? 1.00f : 0.94f;
+                const float floorTone = 0.11f * shade * checker;
+                drawQuad(tile.x0, tile.y0, tile.x1, tile.y1, tile.x2, tile.y2, tile.x3, tile.y3,
+                         floorTone, floorTone * 0.92f, floorTone * 0.82f);
+
+                const float edgeColor = tile.major ? 0.0f : 0.03f;
+                drawLine(tile.x0, tile.y0, tile.x1, tile.y1, edgeColor, edgeColor, edgeColor);
+                drawLine(tile.x1, tile.y1, tile.x2, tile.y2, edgeColor, edgeColor, edgeColor);
+                drawLine(tile.x2, tile.y2, tile.x3, tile.y3, edgeColor, edgeColor, edgeColor);
+                drawLine(tile.x3, tile.y3, tile.x0, tile.y0, edgeColor, edgeColor, edgeColor);
+            }
+        }
+
+        static Direction turnLeft(Direction dir) {
+            switch (dir) {
+                case UP:
+                    return LEFT;
+                case DOWN:
+                    return RIGHT;
+                case LEFT:
+                    return DOWN;
+                case RIGHT:
+                default:
+                    return UP;
+            }
+        }
+
+        static Direction turnRight(Direction dir) {
+            switch (dir) {
+                case UP:
+                    return RIGHT;
+                case DOWN:
+                    return LEFT;
+                case LEFT:
+                    return UP;
+                case RIGHT:
+                default:
+                    return DOWN;
+            }
+        }
+
+        void renderRaycast(const Game& game, int fbw, int fbh) const {
+            const std::vector<std::pair<int, int>>& snake = game.getSnakeBody();
+            if (snake.empty()) {
+                return;
+            }
+
+            const std::pair<int, int>& head = snake.front();
+            const double posX = static_cast<double>(head.first) + 0.5;
+            const double posY = static_cast<double>(head.second) + 0.5;
+
+            double dirX = 1.0;
+            double dirY = 0.0;
+            switch (game.getCurrentDirection()) {
+                case UP:
+                    dirX = 0.0;
+                    dirY = -1.0;
+                    break;
+                case DOWN:
+                    dirX = 0.0;
+                    dirY = 1.0;
+                    break;
+                case LEFT:
+                    dirX = -1.0;
+                    dirY = 0.0;
+                    break;
+                case RIGHT:
+                default:
+                    dirX = 1.0;
+                    dirY = 0.0;
+                    break;
+            }
+
+            const double fovScale = 0.66;
+            const double planeX = -dirY * fovScale;
+            const double planeY = dirX * fovScale;
+
+            const float horizon = static_cast<float>(fbh) * 0.5f;
+            drawRect(0.0f, 0.0f, static_cast<float>(fbw), horizon, 0.10f, 0.12f, 0.16f);
+            drawRect(0.0f, horizon, static_cast<float>(fbw), static_cast<float>(fbh) - horizon, 0.10f, 0.08f, 0.06f);
+            renderProjectedFloorGrid(posX, posY, dirX, dirY, fbw, fbh);
+
+            for (int x = 0; x < fbw; ++x) {
+                const double cameraX = 2.0 * static_cast<double>(x) / static_cast<double>(fbw) - 1.0;
+                const double rayDirX = dirX + planeX * cameraX;
+                const double rayDirY = dirY + planeY * cameraX;
+
+                int mapX = static_cast<int>(std::floor(posX));
+                int mapY = static_cast<int>(std::floor(posY));
+
+                const double deltaDistX = (rayDirX == 0.0) ? 1e30 : std::fabs(1.0 / rayDirX);
+                const double deltaDistY = (rayDirY == 0.0) ? 1e30 : std::fabs(1.0 / rayDirY);
+
+                int stepX = 0;
+                int stepY = 0;
+                double sideDistX = 0.0;
+                double sideDistY = 0.0;
+
+                if (rayDirX < 0.0) {
+                    stepX = -1;
+                    sideDistX = (posX - static_cast<double>(mapX)) * deltaDistX;
+                } else {
+                    stepX = 1;
+                    sideDistX = (static_cast<double>(mapX) + 1.0 - posX) * deltaDistX;
+                }
+                if (rayDirY < 0.0) {
+                    stepY = -1;
+                    sideDistY = (posY - static_cast<double>(mapY)) * deltaDistY;
+                } else {
+                    stepY = 1;
+                    sideDistY = (static_cast<double>(mapY) + 1.0 - posY) * deltaDistY;
+                }
+
+                bool hit = false;
+                int side = 0;
+                int hitCell = WALL;
+                int maxSteps = (_width + _height) * 4;
+                while (!hit && maxSteps-- > 0) {
+                    if (sideDistX < sideDistY) {
+                        sideDistX += deltaDistX;
+                        mapX += stepX;
+                        side = 0;
+                    } else {
+                        sideDistY += deltaDistY;
+                        mapY += stepY;
+                        side = 1;
+                    }
+
+                    hitCell = game.getCell(mapX, mapY);
+                    if (hitCell == SNAKE || hitCell == WALL || hitCell == FOOD) {
+                        hit = true;
+                    }
+                }
+
+                double perpWallDist = 1e30;
+                if (hit) {
+                    if (side == 0) {
+                        perpWallDist = (static_cast<double>(mapX) - posX + (1.0 - static_cast<double>(stepX)) * 0.5) /
+                            ((rayDirX == 0.0) ? 1.0 : rayDirX);
+                    } else {
+                        perpWallDist = (static_cast<double>(mapY) - posY + (1.0 - static_cast<double>(stepY)) * 0.5) /
+                            ((rayDirY == 0.0) ? 1.0 : rayDirY);
+                    }
+                }
+                perpWallDist = std::fabs(perpWallDist);
+                if (perpWallDist < 0.0001) {
+                    perpWallDist = 0.0001;
+                }
+
+                int lineHeight = static_cast<int>(static_cast<double>(fbh) / perpWallDist);
+                int drawStart = -lineHeight / 2 + fbh / 2;
+                int drawEnd = lineHeight / 2 + fbh / 2;
+                if (drawStart < 0) {
+                    drawStart = 0;
+                }
+                if (drawEnd >= fbh) {
+                    drawEnd = fbh - 1;
+                }
+
+                float shade = static_cast<float>(1.0 / (1.0 + perpWallDist * 0.10));
+                if (shade < 0.15f) {
+                    shade = 0.15f;
+                }
+                const float sideShade = (side == 1) ? 0.75f : 1.0f;
+                float wallR = 0.20f * shade * sideShade;
+                float wallG = 0.72f * shade * sideShade;
+                float wallB = 0.30f * shade * sideShade;
+                if (hitCell == FOOD) {
+                    wallR = 0.90f * shade * sideShade;
+                    wallG = 0.18f * shade * sideShade;
+                    wallB = 0.14f * shade * sideShade;
+                } else if (hitCell == WALL) {
+                    wallR = 0.64f * shade * sideShade;
+                    wallG = 0.64f * shade * sideShade;
+                    wallB = 0.64f * shade * sideShade;
+                }
+
+                drawRect(static_cast<float>(x), static_cast<float>(drawStart), 1.0f,
+                         static_cast<float>(drawEnd - drawStart + 1), wallR, wallG, wallB);
+            }
+        }
+
+        void renderMiniMap(const Game& game, int fbw, int fbh) const {
+            const int margin = 16;
+            const int minimapMaxW = fbw / 3;
+            const int minimapMaxH = fbh / 3;
+            const float cellSize = std::max(4.0f,
+                std::min(static_cast<float>(minimapMaxW) / static_cast<float>(_width),
+                         static_cast<float>(minimapMaxH) / static_cast<float>(_height)));
+            const float mapW = cellSize * static_cast<float>(_width);
+            const float mapH = cellSize * static_cast<float>(_height);
+            const float mapX = static_cast<float>(fbw) - mapW - static_cast<float>(margin);
+            const float mapY = static_cast<float>(margin);
+
+            drawRect(mapX - 8.0f, mapY - 8.0f, mapW + 16.0f, mapH + 16.0f, 0.03f, 0.03f, 0.04f);
+
+            for (int y = 0; y < _height; ++y) {
+                for (int x = 0; x < _width; ++x) {
+                    const float px = mapX + static_cast<float>(x) * cellSize;
+                    const float py = mapY + static_cast<float>(y) * cellSize;
+
+                    drawRect(px, py, cellSize - 1.0f, cellSize - 1.0f, 0.15f, 0.16f, 0.18f);
+
+                    const int cell = game.getCell(x, y);
+                    if (cell == FOOD) {
+                        drawRect(px + 2.0f, py + 2.0f, cellSize - 4.0f, cellSize - 4.0f, 0.90f, 0.20f, 0.16f);
+                    } else if (cell == SNAKE) {
+                        drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.16f, 0.78f, 0.25f);
+                    } else if (cell == WALL) {
+                        drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.60f, 0.60f, 0.60f);
+                    }
+                }
+            }
+
+            const std::vector<std::pair<int, int>>& snake = game.getSnakeBody();
+            if (!snake.empty()) {
+                const std::pair<int, int>& head = snake.front();
+                const float centerX = mapX + (static_cast<float>(head.first) + 0.5f) * cellSize;
+                const float centerY = mapY + (static_cast<float>(head.second) + 0.5f) * cellSize;
+                float dirX = 1.0f;
+                float dirY = 0.0f;
+                switch (game.getCurrentDirection()) {
+                    case UP:
+                        dirX = 0.0f;
+                        dirY = -1.0f;
+                        break;
+                    case DOWN:
+                        dirX = 0.0f;
+                        dirY = 1.0f;
+                        break;
+                    case LEFT:
+                        dirX = -1.0f;
+                        dirY = 0.0f;
+                        break;
+                    case RIGHT:
+                    default:
+                        dirX = 1.0f;
+                        dirY = 0.0f;
+                        break;
+                }
+
+                drawRect(centerX - 1.5f, centerY - 1.5f, 3.0f, 3.0f, 1.0f, 1.0f, 0.85f);
+                drawRect(centerX, centerY, dirX * cellSize * 0.9f + 1.0f, dirY * cellSize * 0.9f + 1.0f,
+                         1.0f, 1.0f, 0.2f);
+            }
+        }
+
     public:
         GLGame(int w, int h);
         ~GLGame();
@@ -187,7 +567,7 @@ class GLGame {
 };
 
 GLGame::GLGame(int w, int h)
-    : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32) {
+    : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32), _lastDirection(RIGHT) {
     if (!load_glfw_gl_symbols()) {
         return;
     }
@@ -200,13 +580,15 @@ GLGame::GLGame(int w, int h)
         glfw_initialized = true;
     }
 
-    const int pixel_width = std::max(400, _width * _cell_size);
-    const int pixel_height = std::max(400, _height * _cell_size);
+    const int pixel_width = WINDOW_WIDTH;
+    const int pixel_height = WINDOW_HEIGHT;
     _window = glfwCreateWindow_ptr(pixel_width, pixel_height, "Nibbler - OpenGL", nullptr, nullptr);
     if (!_window) {
         std::cerr << "[GL] glfwCreateWindow failed" << std::endl;
         return;
     }
+
+    glfwSetWindowSizeLimits_ptr(_window, pixel_width, pixel_height, pixel_width, pixel_height);
 
     glfwMakeContextCurrent_ptr(_window);
     glfwSwapInterval_ptr(1);
@@ -251,26 +633,10 @@ void GLGame::display(const Game& game) {
 
     glClear_ptr(GL_COLOR_BUFFER_BIT);
 
-    const float cell_w = static_cast<float>(fbw) / static_cast<float>(_width);
-    const float cell_h = static_cast<float>(fbh) / static_cast<float>(_height);
+    _lastDirection = static_cast<Direction>(game.getCurrentDirection());
 
-    for (int y = 0; y < _height; ++y) {
-        for (int x = 0; x < _width; ++x) {
-            const float px = static_cast<float>(x) * cell_w;
-            const float py = static_cast<float>(y) * cell_h;
-
-            drawRect(px, py, cell_w - 1.0f, cell_h - 1.0f, 0.15f, 0.16f, 0.18f);
-
-            const int cell = game.getCell(x, y);
-            if (cell == FOOD) {
-                drawRect(px + 4.0f, py + 4.0f, cell_w - 8.0f, cell_h - 8.0f, 0.90f, 0.20f, 0.16f);
-            } else if (cell == SNAKE) {
-                drawRect(px + 2.0f, py + 2.0f, cell_w - 4.0f, cell_h - 4.0f, 0.16f, 0.78f, 0.25f);
-            } else if (cell == WALL) {
-                drawRect(px + 2.0f, py + 2.0f, cell_w - 4.0f, cell_h - 4.0f, 0.60f, 0.60f, 0.60f);
-            }
-        }
-    }
+    renderRaycast(game, fbw, fbh);
+    renderMiniMap(game, fbw, fbh);
 
     glfwSwapBuffers_ptr(_window);
 }
@@ -308,21 +674,13 @@ int GLGame::handleInput() {
         currentLibrary = GL;
         return 30;
     }
-    if (edge_pressed[GLFW_KEY_UP]) {
-        edge_pressed.clear();
-        return UP;
-    }
-    if (edge_pressed[GLFW_KEY_DOWN]) {
-        edge_pressed.clear();
-        return DOWN;
-    }
     if (edge_pressed[GLFW_KEY_LEFT]) {
         edge_pressed.clear();
-        return LEFT;
+        return turnLeft(_lastDirection);
     }
     if (edge_pressed[GLFW_KEY_RIGHT]) {
         edge_pressed.clear();
-        return RIGHT;
+        return turnRight(_lastDirection);
     }
 
     edge_pressed.clear();

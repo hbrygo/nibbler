@@ -139,15 +139,12 @@ class SDL3Game {
 static bool load_sdl3_symbols() {
     if (initialized) return true;
     
-    std::cerr << "[SDL3] Loading SDL3..." << std::endl;
     sdl_handle = dlopen("./sdl3/build/libSDL3.so", RTLD_NOW | RTLD_GLOBAL);
     if (!sdl_handle) {
         std::cerr << "[SDL3] Error: Unable to load libSDL3 - " << dlerror() << std::endl;
         return false;
     }
-    
-    std::cerr << "[SDL3] ✓ libSDL3 loaded successfully" << std::endl;
-    
+        
     // Load function pointers from SDL3
     SDL_Init_ptr = (PFNSDLINITPROC)dlsym(sdl_handle, "SDL_Init");
     SDL_Quit_ptr = (PFNSDLQUITPROC)dlsym(sdl_handle, "SDL_Quit");
@@ -184,7 +181,6 @@ static bool load_sdl3_symbols() {
     }
     
     initialized = true;
-    std::cerr << "[SDL3] SDL3 symbols loaded successfully" << std::endl;
     return true;
 }
 
@@ -201,8 +197,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         return;
     }
     
-    std::cerr << "[SDL3] SDL_Init VIDEO succeeded" << std::endl;
-
     // Create window with appropriate size
     int window_width = (w * 32 > 400) ? w * 32 : 400;
     int window_height = (h * 32 > 400) ? h * 32 : 400;
@@ -216,12 +210,10 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         return;
     }
     
-    std::cerr << "[SDL3] Window and renderer created" << std::endl;
     
     // Capture window focus to avoid system shortcuts
     if (SDL_SetWindowInputFocus_ptr) {
         SDL_SetWindowInputFocus_ptr(_window);
-        std::cerr << "[SDL3] Window input focus set" << std::endl;
     }
     
     // Load BMP textures from textureSDL3/ directory
@@ -233,8 +225,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _snakeUpDownTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_snakeUpDownTexture) SDL_SetTextureBlendMode_ptr(_snakeUpDownTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load snake_up_down.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/snake_right_left.bmp");
@@ -243,8 +233,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _snakeLeftRightTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_snakeLeftRightTexture) SDL_SetTextureBlendMode_ptr(_snakeLeftRightTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load snake_right_left.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/snake_turn_right.bmp");
@@ -253,8 +241,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _snakeTurnRightTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_snakeTurnRightTexture) SDL_SetTextureBlendMode_ptr(_snakeTurnRightTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load snake_turn_right.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/snake_turn_left.bmp");
@@ -263,8 +249,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _snakeTurnLeftTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_snakeTurnLeftTexture) SDL_SetTextureBlendMode_ptr(_snakeTurnLeftTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load snake_turn_left.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/apple.bmp");
@@ -273,8 +257,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _foodTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_foodTexture) SDL_SetTextureBlendMode_ptr(_foodTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load apple.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/bg.bmp");
@@ -283,8 +265,6 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _backgroundTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_backgroundTexture) SDL_SetTextureBlendMode_ptr(_backgroundTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load bg.bmp" << std::endl;
     }
     
     surface = SDL_LoadBMP_ptr("textureSDL3/wall.bmp");
@@ -293,15 +273,11 @@ SDL3Game::SDL3Game(int w, int h) : _window(nullptr), _renderer(nullptr), _width(
         _wallTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
         if (_wallTexture) SDL_SetTextureBlendMode_ptr(_wallTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
-    } else {
-        std::cerr << "[SDL3] Error: Unable to load wall.bmp" << std::endl;
     }
-    
-    std::cerr << "[SDL3] BMP textures loaded successfully" << std::endl;
 }
 
+
 SDL3Game::~SDL3Game() {
-    // Free textures
     if (_snakeUpDownTexture) SDL_DestroyTexture_ptr(_snakeUpDownTexture);
     if (_snakeLeftRightTexture) SDL_DestroyTexture_ptr(_snakeLeftRightTexture);
     if (_snakeTurnRightTexture) SDL_DestroyTexture_ptr(_snakeTurnRightTexture);
@@ -314,65 +290,6 @@ SDL3Game::~SDL3Game() {
     SDL_Quit_ptr();
 }
 
-
-// void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, std::vector<std::pair<int, int>>& snakeBody) {
-//     int nextPosition = 0;
-//     int previousPosition = 0;
-    
-//     for (size_t i = 0; i < snakeBody.size(); ++i) {
-//         if (i == 0) {
-//             if (currentDirection == UP || currentDirection == DOWN) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
-//             } else {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeLeftRightTexture, nullptr, &rect);
-//             }
-//         } else if (i == snakeBody.size() - 1) {
-//             // tail
-//         } else {
-//             if (snakeBody[i - 1].first == snakeBody[i].first - 1 && snakeBody[i - 1].second == snakeBody[i].second) {
-//                 // turn right
-//                 nextPosition = 1;
-//             } else if (snakeBody[i - 1].first == snakeBody[i].first + 1 && snakeBody[i - 1].second == snakeBody[i].second) {
-//                 // turn left
-//                 nextPosition = 2;
-//             } else if (snakeBody[i - 1].first == snakeBody[i].first && snakeBody[i - 1].second == snakeBody[i].second - 1) {
-//                 // up
-//                 nextPosition = 3;
-//             } else if (snakeBody[i - 1].first == snakeBody[i].first && snakeBody[i - 1].second == snakeBody[i].second + 1) {
-//                 // down
-//                 nextPosition = 4;
-//             }
-
-//             if (snakeBody[i + 1].first == snakeBody[i].first - 1 && snakeBody[i + 1].second == snakeBody[i].second) {
-//                 // turn right
-//                 previousPosition = 1;
-//             } else if (snakeBody[i + 1].first == snakeBody[i].first + 1 && snakeBody[i + 1].second == snakeBody[i].second) {
-//                 // turn left
-//                 previousPosition = 2;
-//             } else if (snakeBody[i + 1].first == snakeBody[i].first && snakeBody[i + 1].second == snakeBody[i].second - 1) {
-//                 // up
-//                 previousPosition = 3;
-//             } else if (snakeBody[i + 1].first == snakeBody[i].first && snakeBody[i + 1].second == snakeBody[i].second + 1) {
-//                 // down
-//                 previousPosition = 4;
-//             }
-
-//             if ((previousPosition == 3 && nextPosition == 4) || (previousPosition == 4 && nextPosition == 3)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeUpDownTexture, nullptr, &rect);
-//             } else if ((previousPosition == 1 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 1)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeLeftRightTexture, nullptr, &rect);
-//             } else if ((previousPosition == 3 && nextPosition == 1) || (previousPosition == 1 && nextPosition == 3)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnRightTexture, nullptr, &rect);
-//             } else if ((previousPosition == 3 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 3)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnLeftTexture, nullptr, &rect);
-//             } else if ((previousPosition == 4 && nextPosition == 1) || (previousPosition == 1 && nextPosition == 4)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnLeftTexture, nullptr, &rect);
-//             } else if ((previousPosition == 4 && nextPosition == 2) || (previousPosition == 2 && nextPosition == 4)) {
-//                 SDL_RenderTexture_ptr(_renderer, _snakeTurnRightTexture, nullptr, &rect);
-//             }
-//         }
-//     }
-// }
 
 void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody) {
     auto renderRotated = [&](SDL_Texture* texture, double angle) {
@@ -489,7 +406,6 @@ void SDL3Game::display(const Game& game) {
             
             int cell = game.getCell(x, y);
             if (cell == FOOD) {
-                // Display food texture (fallback: red square)
                 if (_foodTexture) {
                     SDL_RenderTexture_ptr(_renderer, _foodTexture, nullptr, &rect);
                 } else {
@@ -497,8 +413,6 @@ void SDL3Game::display(const Game& game) {
                     SDL_RenderFillRect_ptr(_renderer, &rect);
                 }
             } else if (cell == WALL) {
-                std::cout << "[SDL3] Drawing wall at (" << x << ", " << y << ")" << std::endl;
-                // Display wall texture (fallback: gray square)
                 if (_wallTexture) {
                     SDL_RenderTexture_ptr(_renderer, _wallTexture, nullptr, &rect);
                 } else {
@@ -530,42 +444,33 @@ int SDL3Game::handleInput() {
             // Direct access to scancode at offset 24 in the structure
             unsigned char* bytes = (unsigned char*)&event;
             int scancode = *(int*)(bytes + 24);  // offset 24 = scancode (little-endian int)
-            std::cerr << "[SDL3] KEY_DOWN - scancode: " << scancode << std::endl;
             
             if (scancode == SDL_SCANCODE_ESCAPE) {
-                std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
                 return -1;
             }
             // Arrow keys
             if (scancode == SDL_SCANCODE_LEFT) {
-                std::cerr << "[INPUT] LEFT detected -> returning " << LEFT << std::endl;
                 return LEFT;
             }
             if (scancode == SDL_SCANCODE_RIGHT) {
-                std::cerr << "[INPUT] RIGHT detected -> returning " << RIGHT << std::endl;
                 return RIGHT;
             }
             if (scancode == SDL_SCANCODE_UP) {
-                std::cerr << "[INPUT] UP detected -> returning " << UP << std::endl;
                 return UP;
             }
             if (scancode == SDL_SCANCODE_DOWN) {
-                std::cerr << "[INPUT] DOWN detected -> returning " << DOWN << std::endl;
                 return DOWN;
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
-                std::cerr << "[INPUT] Mode 1" << std::endl;
                 currentLibrary = SFML;
                 return 10;  // Increased to avoid UP (1), DOWN (2), etc.
             }
             if (scancode == SDL_SCANCODE_2) {
-                std::cerr << "[INPUT] Mode 2" << std::endl;
                 currentLibrary = SDL3;
                 return 20;
             }
             if (scancode == SDL_SCANCODE_3) {
-                std::cerr << "[INPUT] Mode 3" << std::endl;
                 currentLibrary = GL;
                 return 30;
             }
