@@ -48,44 +48,44 @@ SFMLGame::SFMLGame(int w, int h) : _window(nullptr), _width(w), _height(h), _las
 
     std::cerr << "[SFML] Window created successfully" << std::endl;
 
-    // Load BMP textures from textureMLX/ directory
-    if (!_snakeUpDownTexture.loadFromFile("textureMLX/snake_up_down.png")) {
+    // Load BMP textures from textureSFML/ directory
+    if (!_snakeUpDownTexture.loadFromFile("textureSFML/snake_up_down.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_up_down.png" << std::endl;
     }
 
-    if (!_snakeLeftRightTexture.loadFromFile("textureMLX/snake_left_right.png")) {
+    if (!_snakeLeftRightTexture.loadFromFile("textureSFML/snake_left_right.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_left_right.png" << std::endl;
     }
 
-    if (!_snakeTurnRightTexture.loadFromFile("textureMLX/snake_turn_right.png")) {
+    if (!_snakeTurnRightTexture.loadFromFile("textureSFML/snake_turn_right.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_turn_right.png" << std::endl;
     }
 
-    if (!_snakeTurnLeftTexture.loadFromFile("textureMLX/snake_turn_left.png")) {
+    if (!_snakeTurnLeftTexture.loadFromFile("textureSFML/snake_turn_left.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_turn_left.png" << std::endl;
     }
 
-    if (!_foodTexture.loadFromFile("textureMLX/appel_color.png")) {
+    if (!_foodTexture.loadFromFile("textureSFML/appel_color.png")) {
         std::cerr << "[SFML] Error: Unable to load appel_color.png" << std::endl;
     }
 
-    if (!_backgroundTexture1.loadFromFile("textureMLX/snake_ground_4.png")) {
+    if (!_backgroundTexture1.loadFromFile("textureSFML/snake_ground_4.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_ground_4.png" << std::endl;
     }
     
-    if (!_backgroundTexture2.loadFromFile("textureMLX/snake_ground_5.png")) {
+    if (!_backgroundTexture2.loadFromFile("textureSFML/snake_ground_5.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_ground_5.png" << std::endl;
     }
 
-    if (!_wallTexture.loadFromFile("textureMLX/Snake_green_wall.png")) {
+    if (!_wallTexture.loadFromFile("textureSFML/Snake_green_wall.png")) {
         std::cerr << "[SFML] Error: Unable to load Snake_green_wall.png" << std::endl;
     }
 
-    if (!_snakeHeadTexture.loadFromFile("textureMLX/snake_head_up.png")) {
+    if (!_snakeHeadTexture.loadFromFile("textureSFML/snake_head_up.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_head_up.png" << std::endl;
     }
 
-    if (!_snakeTailTexture.loadFromFile("textureMLX/snake_tail_up.png")) {
+    if (!_snakeTailTexture.loadFromFile("textureSFML/snake_tail_up.png")) {
         std::cerr << "[SFML] Error: Unable to load snake_tail_up.png" << std::endl;
     }
 
