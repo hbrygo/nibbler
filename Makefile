@@ -24,6 +24,8 @@ GLFW_INC = glfw-3.4/include
 GLM_INC = glm
 CAM_INC = Camera.hpp
 AUDIO_INC = miniaudio
+SFML_INC = sfml-2.5.1/include
+SFML_LIB = sfml-2.5.1/build/lib
 SDL_DIR = extern/SDL2
 SDL_INC = $(SDL_DIR)/include
 NAME	= nibbler
@@ -39,7 +41,7 @@ CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
 LDFLAGS = -ldl
 
 %.o: %.cpp
-	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC}
+	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC} -I ${SFML_INC}
 
 sdl3_build:
 	@if [ ! -d sdl3 ]; then \
@@ -68,16 +70,16 @@ glfw_build:
 	fi
 
 sfml_build:
-	@if [ ! -d sfml-3.1.0 ]; then \
-		echo "Téléchargement de SFML 3.1.0..."; \
-		curl -L -o sfml-3.1.0.tar.gz https://github.com/SFML/SFML/archive/3.1.0.tar.gz; \
-		tar -xzf sfml-3.1.0.tar.gz; \
-		mv SFML-3.1.0 sfml-3.1.0; \
-		rm sfml-3.1.0.tar.gz; \
+	@if [ ! -d sfml-2.5.1 ]; then \
+		echo "Téléchargement de SFML 2.5.1..."; \
+		curl -L -o sfml-2.5.1.tar.gz https://github.com/SFML/SFML/archive/2.5.1.tar.gz; \
+		tar -xzf sfml-2.5.1.tar.gz; \
+		mv SFML-2.5.1 sfml-2.5.1; \
+		rm sfml-2.5.1.tar.gz; \
 	fi
-	@if [ ! -d sfml-3.1.0/build ]; then \
-		mkdir -p sfml-3.1.0/build; \
-		cd sfml-3.1.0/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSFML_BUILD_GRAPHICS=OFF -DSFML_BUILD_WINDOW=OFF -DSFML_BUILD_NETWORK=OFF -DSFML_BUILD_AUDIO=OFF && make -j4; \
+	@if [ ! -d sfml-2.5.1/build ]; then \
+		mkdir -p sfml-2.5.1/build; \
+		cd sfml-2.5.1/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSFML_BUILD_GRAPHICS=ON -DSFML_BUILD_WINDOW=ON -DSFML_BUILD_NETWORK=OFF -DSFML_BUILD_AUDIO=OFF -DSFML_BUILD_EXAMPLES=OFF && make -j4; \
 		cd ../../..; \
 	fi
 
@@ -91,7 +93,7 @@ ${LIB_GL}: glfw_build ${OBJS_GL}
 	${CXX} ${OBJS_GL} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./glfw-3.4/build -o ${LIB_GL}
 
 ${LIB_SFML}: sfml_build ${OBJS_SFML}
-	${CXX} ${OBJS_SFML} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./MLX42/build -o ${LIB_SFML}
+	${CXX} ${OBJS_SFML} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./${SFML_LIB} -Wl,-z,origin -Wl,-rpath,\$$ORIGIN/${SFML_LIB} -lsfml-graphics -lsfml-window -lsfml-system -o ${LIB_SFML}
 
 .DEFAULT_GOAL := all
 
@@ -104,7 +106,7 @@ fclean: clean
 	${RM} ${NAME} ${LIB_SDL3} ${LIB_GL} ${LIB_SFML}
 	${RM} sdl3
 	${RM} glfw-3.4
-	${RM} sfml-3.1.0
+	${RM} sfml-2.5.1
 
 re: fclean all
 
