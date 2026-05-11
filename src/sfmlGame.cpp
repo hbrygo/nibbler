@@ -454,9 +454,7 @@ extern "C" {
     int input_gui_sfml(void* gui) {
         return ((SFMLGame*)gui)->handleInput();
     }
-}
 
-extern "C" {
     sf::RenderWindow* sfml_create_render_window(int width, int height, const char* title) {
         return new sf::RenderWindow(sf::VideoMode(width, height), title);
     }
