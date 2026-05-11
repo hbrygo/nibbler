@@ -1,4 +1,4 @@
-#include "../includes/sfml.hpp"
+#include "../includes/SfmlGame.hpp"
 
 typedef sf::RenderWindow* (*PFSFMLCREATERENDERWINDOWPROC)(int, int, const char*);
 typedef void (*PFSFMLDESTROYRENDERWINDOWPROC)(sf::RenderWindow*);

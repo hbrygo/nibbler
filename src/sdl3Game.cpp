@@ -1,4 +1,4 @@
-#include "../includes/sdl3.hpp"
+#include "../includes/Sdl3Game.hpp"
 
 // SDL3 constants
 #define SDL_INIT_VIDEO 0x00000020
