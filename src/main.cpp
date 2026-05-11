@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     }
     const char* selected_library = argv[3];
     bool valid_library = false;
-    const char* available_libraries[] = {"sfml", "sdl3", "gl"};
+    const char* available_libraries[] = {"sdl3", "sfml", "gl"};
     for (int i = 0; i < 3; ++i) {
         if (strcmp(selected_library, available_libraries[i]) == 0) {
             valid_library = true;

@@ -572,6 +572,8 @@ GLGame::GLGame(int w, int h)
         return;
     }
 
+    (void)_cell_size;
+
     if (!glfw_initialized) {
         if (!glfwInit_ptr()) {
             std::cerr << "[GL] glfwInit failed" << std::endl;
@@ -661,12 +663,12 @@ int GLGame::handleInput() {
     }
     if (edge_pressed[GLFW_KEY_1]) {
         edge_pressed.clear();
-        currentLibrary = SFML;
+        currentLibrary = SDL3;
         return 10;
     }
     if (edge_pressed[GLFW_KEY_2]) {
         edge_pressed.clear();
-        currentLibrary = SDL3;
+        currentLibrary = SFML;
         return 20;
     }
     if (edge_pressed[GLFW_KEY_3]) {

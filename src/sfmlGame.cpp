@@ -419,12 +419,12 @@ int SFMLGame::handleInput() {
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (event.key.code == sf::Keyboard::Num1) {
                 std::cerr << "[INPUT] Mode 1" << std::endl;
-                currentLibrary = SFML;
+                currentLibrary = SDL3;
                 return 10;
             }
             if (event.key.code == sf::Keyboard::Num2) {
                 std::cerr << "[INPUT] Mode 2" << std::endl;
-                currentLibrary = SDL3;
+                currentLibrary = SFML;
                 return 20;
             }
             if (event.key.code == sf::Keyboard::Num3) {

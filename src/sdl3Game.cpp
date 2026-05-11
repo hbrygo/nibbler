@@ -463,11 +463,11 @@ int SDL3Game::handleInput() {
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
-                currentLibrary = SFML;
+                currentLibrary = SDL3;
                 return 10;  // Increased to avoid UP (1), DOWN (2), etc.
             }
             if (scancode == SDL_SCANCODE_2) {
-                currentLibrary = SDL3;
+                currentLibrary = SFML;
                 return 20;
             }
             if (scancode == SDL_SCANCODE_3) {
