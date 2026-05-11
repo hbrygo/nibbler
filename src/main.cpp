@@ -106,8 +106,8 @@ int main(int argc, char** argv) {
         
         int input = input_gui(gui);
         if (input == -1) running = false; // ESC
-        else if (input == 10 && !load_lib(lib_path_for_mode(SFML), SFML)) running = false;
-        else if (input == 20 && !load_lib(lib_path_for_mode(SDL3), SDL3)) running = false;
+        else if (input == 10 && !load_lib(lib_path_for_mode(SDL3), SDL3)) running = false;
+        else if (input == 20 && !load_lib(lib_path_for_mode(SFML), SFML)) running = false;
         else if (input == 30 && !load_lib(lib_path_for_mode(GL), GL)) running = false;
         else if (input == UP) game.changeDirection(UP);
         else if (input == DOWN) game.changeDirection(DOWN);
