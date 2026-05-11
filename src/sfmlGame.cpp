@@ -1,10 +1,4 @@
-#include "../includes/game.hpp"
-#include "../includes/nibbler.hpp"
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <dlfcn.h>
-#include <iostream>
-#include <chrono>
+#include "../includes/sfml.hpp"
 
 typedef sf::RenderWindow* (*PFSFMLCREATERENDERWINDOWPROC)(int, int, const char*);
 typedef void (*PFSFMLDESTROYRENDERWINDOWPROC)(sf::RenderWindow*);
@@ -29,31 +23,6 @@ static PFSFMLLOADTEXTUREPROC SFML_LoadTexture_ptr = nullptr;
 static PFSFMLDESTROYTEXTUREPROC SFML_DestroyTexture_ptr = nullptr;
 static void* sfml_handle = nullptr;
 static bool initialized = false;
-
-class SFMLGame {
-    private:
-        sf::RenderWindow* _window;
-        int _width, _height;
-        sf::Texture* _snakeUpDownTexture;
-        sf::Texture* _snakeLeftRightTexture;
-        sf::Texture* _snakeTurnRightTexture;
-        sf::Texture* _snakeTurnLeftTexture;
-        sf::Texture* _foodTexture;
-        sf::Texture* _backgroundTexture1;
-        sf::Texture* _backgroundTexture2;
-        sf::Texture* _wallTexture;
-        sf::Texture* _snakeHeadTexture;
-        sf::Texture* _snakeTailTexture;
-        std::chrono::high_resolution_clock::time_point _lastMoveTime;
-        std::vector<std::pair<int, int>> _prevSnakeBody;
-
-    public:
-        SFMLGame(int w, int h);
-        ~SFMLGame();
-        void display(const Game& game);
-        void display_good_part(sf::FloatRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody);
-        int handleInput();
-};
 
 static bool load_sfml_symbols() {
     if (initialized) {
@@ -96,6 +65,17 @@ static bool load_sfml_symbols() {
     return true;
 }
 
+SFMLGame::SFMLGame() : _window(nullptr), _width(0), _height(0),
+    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
+    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
+    _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
+    _snakeTailTexture(nullptr) {};
+
+SFMLGame::SFMLGame(const SFMLGame&) : SFMLGame() {}
+
+SFMLGame& SFMLGame::operator=(const SFMLGame&) {
+    return *this;
+}
 
 SFMLGame::SFMLGame(int w, int h) : _window(nullptr), _width(w), _height(h),
     _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
@@ -455,9 +435,7 @@ extern "C" {
     int input_gui_sfml(void* gui) {
         return ((SFMLGame*)gui)->handleInput();
     }
-}
 
-extern "C" {
     sf::RenderWindow* sfml_create_render_window(int width, int height, const char* title) {
         return new sf::RenderWindow(sf::VideoMode(width, height), title);
     }
