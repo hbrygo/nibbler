@@ -540,6 +540,10 @@ void GLGame::renderMiniMap(const Game& game, int fbw, int fbh) const {
     }
 }
 
+GLGame::GLGame()
+    : GLGame(20, 15) {
+}
+
 GLGame::GLGame(int w, int h)
     : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32), _lastDirection(RIGHT) {
     if (!load_glfw_gl_symbols()) {
@@ -583,6 +587,32 @@ GLGame::~GLGame() {
         glfw_initialized = false;
     }
     unload_symbols();
+}
+
+GLGame::GLGame(const GLGame& other) {
+    if (this != &other) {
+        _window = nullptr;
+        _width = other._width;
+        _height = other._height;
+        _cell_size = other._cell_size;
+        _lastDirection = other._lastDirection;
+
+        if (other.isReady()) {
+            *this = GLGame(_width, _height);
+        }
+    }
+}
+
+GLGame& GLGame::operator=(const GLGame& other) {
+    if (this != &other) {
+        GLGame temp(other);
+        std::swap(_window, temp._window);
+        std::swap(_width, temp._width);
+        std::swap(_height, temp._height);
+        std::swap(_cell_size, temp._cell_size);
+        std::swap(_lastDirection, temp._lastDirection);
+    }
+    return *this;
 }
 
 bool GLGame::isReady() const {

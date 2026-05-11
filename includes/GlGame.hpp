@@ -37,9 +37,10 @@ class GLGame
 		void renderMiniMap(const Game& game, int fbw, int fbh) const;
 
 	public:
+		GLGame();
 		GLGame(int w, int h);
-		GLGame(const GLGame& other) = delete;
-		GLGame& operator=(const GLGame& other) = delete;
+		GLGame(const GLGame& other);
+		GLGame& operator=(const GLGame& other);
 		~GLGame();
 
 		void display(const Game& game);
