@@ -45,7 +45,8 @@ class Game {
         Direction _currentDirection;
         std::pair<int, int> _applePosition;
         std::pair<int, int> _wallPosition;
-        struct timeval _start;
+        struct timeval _spawnApple;
+        int _score;
 
     public:
         Game();
