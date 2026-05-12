@@ -10,7 +10,7 @@ Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}) 
     generateApple();
 }
 
-Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}) {
+Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _score(0) {
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -115,6 +115,7 @@ void Game::generateApple()
     } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end());
 
     _applePosition = pos;
+    gettimeofday(&_spawnApple, nullptr);
 }
 
 int Game::moveSnake() {
@@ -142,10 +143,17 @@ int Game::moveSnake() {
     _snakeBody[0] = newHead;
 
     if (onApple()) {
+        struct timeval now;
+        gettimeofday(&now, nullptr);
+        long elapsed = (now.tv_sec - _spawnApple.tv_sec) * 2;
+        if (elapsed > 100) elapsed = 100;
+        _score += 100 - elapsed;
+        std::cout << "This apple give you " << 100 - elapsed << " points!" << std::endl;
         generateApple();
     }
 
     if (checkDeath()) {
+        std::cout << "Score: " << _score << std::endl;
         std::cout << "Game Over!" << std::endl;
         return -1;
     }

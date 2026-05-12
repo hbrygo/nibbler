@@ -5,6 +5,7 @@
 # include <vector>
 # include <algorithm>
 # include <random>
+# include <sys/time.h>
 
 #define TICK_RATE 150
 
@@ -44,6 +45,8 @@ class Game {
         Direction _currentDirection;
         std::pair<int, int> _applePosition;
         std::pair<int, int> _wallPosition;
+        struct timeval _spawnApple;
+        int _score;
 
     public:
         Game();
