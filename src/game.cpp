@@ -18,6 +18,7 @@ Game::Game(int height, int width) : _gameAreaHeight(height), _gameAreaWidth(widt
     }
     _currentDirection = RIGHT;
     generateApple();
+    gettimeofday(&_start, nullptr);
 }
 
 Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeBody(other._snakeBody), _applePosition(other._applePosition) {}
@@ -146,6 +147,10 @@ int Game::moveSnake() {
     }
 
     if (checkDeath()) {
+        struct timeval end;
+        gettimeofday(&end, nullptr);
+        long score = _snakeSize * 100 + (end.tv_sec - _start.tv_sec);
+        std::cout << "Score: " << score << std::endl;
         std::cout << "Game Over!" << std::endl;
         return -1;
     }
