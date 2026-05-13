@@ -12,6 +12,7 @@ class SFMLGame {
     private:
         sf::RenderWindow* _window;
         int _width, _height;
+        bool _michaelMode;
         sf::Texture* _snakeUpDownTexture;
         sf::Texture* _snakeLeftRightTexture;
         sf::Texture* _snakeTurnRightTexture;
@@ -22,16 +23,17 @@ class SFMLGame {
         sf::Texture* _wallTexture;
         sf::Texture* _snakeHeadTexture;
         sf::Texture* _snakeTailTexture;
+        sf::Texture* _michaelModeTexture;
         std::chrono::high_resolution_clock::time_point _lastMoveTime;
         std::vector<std::pair<int, int>> _prevSnakeBody;
 
     public:
         SFMLGame();
-        SFMLGame(int w, int h);
+        SFMLGame(int w, int h, bool michaelMode);
         ~SFMLGame();
         SFMLGame(const SFMLGame&);
         SFMLGame& operator=(const SFMLGame&);
         void display(const Game& game);
-        void display_good_part(sf::FloatRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody);
+        void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael);
         int handleInput();
 };

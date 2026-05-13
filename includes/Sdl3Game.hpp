@@ -63,14 +63,15 @@ class SDL3Game {
         SDL_Texture* _foodTexture;
         SDL_Texture* _backgroundTexture;
         SDL_Texture* _wallTexture;
+        SDL_Texture* _michaelModeTexture;
 
     public:
         SDL3Game();
-        SDL3Game(int w, int h);
+        SDL3Game(int w, int h, bool michaelMode);
         ~SDL3Game();
         SDL3Game(const SDL3Game&);
         SDL3Game& operator=(const SDL3Game&);
         void display(const Game& game);
-        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody);
+        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
         int handleInput();
 };

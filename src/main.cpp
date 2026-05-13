@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 #include <chrono>
+#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -15,6 +16,11 @@ typedef void (*display_t)(void*, const Game&);
 typedef int (*input_t)(void*);
 
 int main(int argc, char** argv) {
+    int onAppleSound = 0;
+    std::mutex onAppleMutex;
+    std::atomic<bool> soundRunning(true);
+    std::thread sound_thread;
+
     bool michaelMode = false;
     if (argc == 2 && std::strcmp(argv[1], "projet_michael") == 0) michaelMode = true;
     else if (argc != 4) {
@@ -110,6 +116,37 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // create thread to play sound effect
+    sound_thread = std::thread([&]() {
+        ma_engine engine;
+        if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
+            std::cerr << "Failed to initialize audio engine" << std::endl;
+            return;
+        }
+
+        while (soundRunning) {
+            bool shouldPlay = false;
+            {
+                std::lock_guard<std::mutex> lock(onAppleMutex);
+                if (onAppleSound > 0) {
+                    --onAppleSound;
+                    shouldPlay = true;
+                }
+            }
+
+            if (shouldPlay) {
+                std::cout << "Playing apple sound effect!" << std::endl;
+                if (ma_engine_play_sound(&engine, "miniaudio/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
+                    std::cerr << "Failed to play sound" << std::endl;
+                }
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+
+        ma_engine_uninit(&engine);
+    });
+
     Game game(width, height, michaelMode);
     bool running = true;
 	auto last_move = std::chrono::high_resolution_clock::now();
@@ -131,11 +168,16 @@ int main(int argc, char** argv) {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
         
         if (elapsed >= TICK_RATE) {
-            if (game.moveSnake() == -1) running = false; // Collision
+            if (game.moveSnake(onAppleSound, onAppleMutex) == -1) running = false; // Collision
             last_move = now;
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+    }
+
+    soundRunning = false;
+    if (sound_thread.joinable()) {
+        sound_thread.join();
     }
 
     if (gui) destroy_gui(gui);

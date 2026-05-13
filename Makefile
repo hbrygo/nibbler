@@ -92,8 +92,8 @@ sfml_build:
 	mkdir -p sfml-2.5.1/build; \
 	cd sfml-2.5.1/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSFML_BUILD_GRAPHICS=ON -DSFML_BUILD_WINDOW=ON -DSFML_BUILD_NETWORK=OFF -DSFML_BUILD_AUDIO=OFF -DSFML_BUILD_EXAMPLES=OFF && make -j4 && cd ../..;
 
-${NAME}: sdl3_build glfw_build sfml_build ${OBJS_MAIN}
-	${CXX} ${OBJS_MAIN} ${CXXFLAGS} ${LDFLAGS} -rdynamic -o ${NAME}
+${NAME}: sdl3_build glfw_build sfml_build ${OBJS_MAIN} miniaudio/libminiaudio_all.a
+	${CXX} ${OBJS_MAIN} miniaudio/libminiaudio_all.a ${CXXFLAGS} ${LDFLAGS} -rdynamic -o ${NAME}
 
 ${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
 	${CXX} ${OBJS_SDL3} ${CXXFLAGS} -shared -fPIC -ldl -Wl,--allow-shlib-undefined -L./sdl3/build -L./sdl3_image/build -o ${LIB_SDL3}
