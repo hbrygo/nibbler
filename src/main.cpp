@@ -9,17 +9,25 @@
 
 int currentLibrary = SDL3;
 
-typedef void* (*create_t)(int, int);
+typedef void* (*create_t)(int, int, bool);
 typedef void (*destroy_t)(void*);
 typedef void (*display_t)(void*, const Game&);
 typedef int (*input_t)(void*);
 
 int main(int argc, char** argv) {
-    if (argc != 4) {
+    bool michaelMode = false;
+    if (argc == 2 && std::strcmp(argv[1], "projet_michael") == 0) michaelMode = true;
+    else if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <width> <height> <sfml/sdl3/gl>" << std::endl;
         return 1;
     }
-    const char* selected_library = argv[3];
+    const char* selected_library;
+    if (michaelMode) {
+        std::cout << "Michael Mode Activated!" << std::endl;
+        selected_library = "sdl3";
+    } else {
+        selected_library = argv[3];
+    }
     bool valid_library = false;
     const char* available_libraries[] = {"sdl3", "sfml", "gl"};
     for (int i = 0; i < 3; ++i) {
@@ -34,11 +42,16 @@ int main(int argc, char** argv) {
     }
 
     currentLibrary = (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML : 
-                     (selected_library[0] == 's' && selected_library[1] == 'd') ? SDL3 : GL;
-
-    int width = std::atoi(argv[1]);
-    int height = std::atoi(argv[2]);
-
+                    (selected_library[0] == 's' && selected_library[1] == 'd') ? SDL3 : GL;
+    int width = 0;
+    int height = 0;
+    if (michaelMode) {
+        width = 17;
+        height = 32;
+    } else {
+        width = std::atoi(argv[1]);
+        height = std::atoi(argv[2]);
+    }
     if (width <= 9 || height <= 9 || width > 100 || height > 100) {
         std::cerr << "Error: Invalid width or height" << std::endl;
         return 1;
@@ -89,7 +102,7 @@ int main(int argc, char** argv) {
             handle = nullptr;
             return false;
         }
-        gui = create_gui(width, height);
+        gui = create_gui(width, height, michaelMode);
         return true;
     };
 
@@ -97,7 +110,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    Game game(width, height);
+    Game game(width, height, michaelMode);
     bool running = true;
 	auto last_move = std::chrono::high_resolution_clock::now();
 
@@ -108,7 +121,7 @@ int main(int argc, char** argv) {
         if (input == -1) running = false; // ESC
         else if (input == 10 && !load_lib(lib_path_for_mode(SDL3), SDL3)) running = false;
         else if (input == 20 && !load_lib(lib_path_for_mode(SFML), SFML)) running = false;
-        else if (input == 30 && !load_lib(lib_path_for_mode(GL), GL)) running = false;
+        else if (!michaelMode && input == 30 && !load_lib(lib_path_for_mode(GL), GL)) running = false;
         else if (input == UP) game.changeDirection(UP);
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
