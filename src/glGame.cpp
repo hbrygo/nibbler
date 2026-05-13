@@ -541,15 +541,16 @@ void GLGame::renderMiniMap(const Game& game, int fbw, int fbh) const {
 }
 
 GLGame::GLGame()
-    : GLGame(20, 15) {
+    : GLGame(20, 15, false) {
 }
 
-GLGame::GLGame(int w, int h)
+GLGame::GLGame(int w, int h, bool michaelMode)
     : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32), _lastDirection(RIGHT) {
     if (!load_glfw_gl_symbols()) {
         return;
     }
 
+    _michaelMode = michaelMode;
     (void)_cell_size;
 
     if (!glfw_initialized) {
@@ -598,7 +599,7 @@ GLGame::GLGame(const GLGame& other) {
         _lastDirection = other._lastDirection;
 
         if (other.isReady()) {
-            *this = GLGame(_width, _height);
+            *this = GLGame(_width, _height, other._michaelMode);
         }
     }
 }
@@ -611,6 +612,7 @@ GLGame& GLGame::operator=(const GLGame& other) {
         std::swap(_height, temp._height);
         std::swap(_cell_size, temp._cell_size);
         std::swap(_lastDirection, temp._lastDirection);
+        std::swap(_michaelMode, temp._michaelMode);
     }
     return *this;
 }
@@ -694,8 +696,8 @@ int GLGame::handleInput() {
 }
 
 extern "C" {
-    void* create_gui_gl(int width, int height) {
-        return new GLGame(width, height);
+    void* create_gui_gl(int width, int height, bool michaelMode) {
+        return new GLGame(width, height, michaelMode);
     }
 
     void destroy_gui_gl(void* gui) {

@@ -65,19 +65,19 @@ static bool load_sfml_symbols() {
     return true;
 }
 
-SFMLGame::SFMLGame() : _window(nullptr), _width(0), _height(0),
+SFMLGame::SFMLGame() : _window(nullptr), _width(0), _height(0), _michaelMode(false),
     _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
     _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
     _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
-    _snakeTailTexture(nullptr) {
+    _snakeTailTexture(nullptr), _michaelModeTexture(nullptr) {
 }
 
-SFMLGame::SFMLGame(const SFMLGame& other) : _window(other._window), _width(other._width), _height(other._height),
+SFMLGame::SFMLGame(const SFMLGame& other) : _window(other._window), _width(other._width), _height(other._height), _michaelMode(other._michaelMode),
     _snakeUpDownTexture(other._snakeUpDownTexture), _snakeLeftRightTexture(other._snakeLeftRightTexture),
     _snakeTurnRightTexture(other._snakeTurnRightTexture), _snakeTurnLeftTexture(other._snakeTurnLeftTexture),
     _foodTexture(other._foodTexture), _backgroundTexture1(other._backgroundTexture1),
     _backgroundTexture2(other._backgroundTexture2), _wallTexture(other._wallTexture),
-    _snakeHeadTexture(other._snakeHeadTexture), _snakeTailTexture(other._snakeTailTexture) {
+    _snakeHeadTexture(other._snakeHeadTexture), _snakeTailTexture(other._snakeTailTexture), _michaelModeTexture(other._michaelModeTexture) {
 }
 
 SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
@@ -85,6 +85,7 @@ SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
         _window = other._window;
         _width = other._width;
         _height = other._height;
+        _michaelMode = other._michaelMode;
          _snakeUpDownTexture = other._snakeUpDownTexture;
         _snakeLeftRightTexture = other._snakeLeftRightTexture;
         _snakeTurnRightTexture = other._snakeTurnRightTexture;
@@ -95,15 +96,16 @@ SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
         _wallTexture = other._wallTexture;
         _snakeHeadTexture = other._snakeHeadTexture;
         _snakeTailTexture = other._snakeTailTexture;
+        _michaelModeTexture = other._michaelModeTexture;
     }
     return *this;
 }
 
-SFMLGame::SFMLGame(int w, int h) : _window(nullptr), _width(w), _height(h),
+SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w), _height(h), _michaelMode(michaelMode),
     _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
     _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
     _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
-    _snakeTailTexture(nullptr), _lastMoveTime(std::chrono::high_resolution_clock::now()) {
+    _snakeTailTexture(nullptr), _michaelModeTexture(nullptr) {
     std::cerr << "[SFML] Initializing SFML Game..." << std::endl;
 
     if (!load_sfml_symbols()) {
@@ -111,8 +113,15 @@ SFMLGame::SFMLGame(int w, int h) : _window(nullptr), _width(w), _height(h),
     }
 
     // Create window with appropriate size
-    int window_width = (w * 32 > 400) ? w * 32 : 400;
-    int window_height = (h * 32 > 400) ? h * 32 : 400;
+    int window_width = 0;
+    int window_height = 0;
+    if (michaelMode) {
+        window_width = 1400;
+        window_height = 1800;
+    } else {
+        window_width = (w * 32 > 400) ? w * 32 : 400;
+        window_height = (h * 32 > 400) ? h * 32 : 400;
+    }
 
     _window = SFML_CreateRenderWindow_ptr(window_width, window_height, "Nibbler - SFML");
     if (!_window || !SFML_WindowIsOpen_ptr(_window)) {
@@ -176,6 +185,11 @@ SFMLGame::SFMLGame(int w, int h) : _window(nullptr), _width(w), _height(h),
         std::cerr << "[SFML] Error: Unable to load snake_tail_up.png" << std::endl;
     }
 
+    _michaelModeTexture = SFML_LoadTexture_ptr("textureSFML/projet_michael_youn.png");
+    if (!_michaelModeTexture) {
+        std::cerr << "[SFML] Error: Unable to load projet_michael_youn.png" << std::endl;
+    }
+
     std::cerr << "[SFML] BMP textures loaded successfully" << std::endl;
 }
 
@@ -194,6 +208,7 @@ SFMLGame::~SFMLGame() {
     if (_wallTexture) SFML_DestroyTexture_ptr(_wallTexture);
     if (_snakeHeadTexture) SFML_DestroyTexture_ptr(_snakeHeadTexture);
     if (_snakeTailTexture) SFML_DestroyTexture_ptr(_snakeTailTexture);
+    if (_michaelModeTexture) SFML_DestroyTexture_ptr(_michaelModeTexture);
     std::cerr << "[SFML] SFML Game destroyed" << std::endl;
 }
 
@@ -210,8 +225,9 @@ int getDir(int currentDirection, char axe) {
     return 0;
 }
 
-void SFMLGame::display_good_part(sf::FloatRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody) {
-    (void)rect;
+void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael) {
+    const float offsetX = modeMichael ? 640.0f : 0.0f;
+    const float offsetY = modeMichael ? 350.0f : 0.0f;
     
     // Initialiser _prevSnakeBody au premier appel
     if (_prevSnakeBody.empty()) {
@@ -250,15 +266,15 @@ void SFMLGame::display_good_part(sf::FloatRect rect, int currentDirection, const
         // Calculer la position interpolée du segment
         float centerX, centerY;
         if (i < _prevSnakeBody.size()) {
-            float oldX = _prevSnakeBody[i].first * 32.0f + 16.0f;
-            float oldY = _prevSnakeBody[i].second * 32.0f + 16.0f;
-            float newX = snakeBody[i].first * 32.0f + 16.0f;
-            float newY = snakeBody[i].second * 32.0f + 16.0f;
+            float oldX = (_prevSnakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            float oldY = (_prevSnakeBody[i].second * 32.0f + 16.0f) + offsetY;
+            float newX = (snakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            float newY = (snakeBody[i].second * 32.0f + 16.0f) + offsetY;
             centerX = oldX + (newX - oldX) * progress;
             centerY = oldY + (newY - oldY) * progress;
         } else {
-            centerX = snakeBody[i].first * 32.0f + 16.0f;
-            centerY = snakeBody[i].second * 32.0f + 16.0f;
+            centerX = (snakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            centerY = (snakeBody[i].second * 32.0f + 16.0f) + offsetY;
         }
 
         // HEAD
@@ -341,6 +357,9 @@ void SFMLGame::display_good_part(sf::FloatRect rect, int currentDirection, const
 }
 
 void SFMLGame::display(const Game& game) {
+    const float offsetX = game.getMichaelMode() ? 640.0f : 0.0f;
+    const float offsetY = game.getMichaelMode() ? 350.0f : 0.0f;
+
     if (!_window || !SFML_WindowIsOpen_ptr(_window)) {
         return;
     }
@@ -350,23 +369,23 @@ void SFMLGame::display(const Game& game) {
         for (int j = 0; j < _height; j++) {
             if ((i + j) % 2 == 0) {
                 sf::Sprite backgroundSprite(*_backgroundTexture1);
-                backgroundSprite.setPosition(i * 32.0f, j * 32.0f);
+                backgroundSprite.setPosition((i * 32.0f) + offsetX, (j * 32.0f) + offsetY);
                 SFML_WindowDrawSprite_ptr(_window, &backgroundSprite);
             } else {
                 sf::Sprite backgroundSprite(*_backgroundTexture2);
-                backgroundSprite.setPosition(i * 32.0f, j * 32.0f);
+                backgroundSprite.setPosition((i * 32.0f) + offsetX, (j * 32.0f) + offsetY);
                 SFML_WindowDrawSprite_ptr(_window, &backgroundSprite);
             }
 
             int cell = game.getCell(i, j);
             if (cell == FOOD) {
                 sf::Sprite foodSprite(*_foodTexture);
-                foodSprite.setPosition((i * 32.0f) + 16.0f, (j * 32.0f) + 16.0f);
+                foodSprite.setPosition(((i * 32.0f) + 16.0f) + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
                 foodSprite.setOrigin(16.0f, 16.0f);
                 SFML_WindowDrawSprite_ptr(_window, &foodSprite);
             } else if (cell == WALL) {
                 sf::Sprite wallSprite(*_wallTexture);
-                wallSprite.setPosition((i * 32.0f) + 16.0f, (j * 32.0f) + 16.0f);
+                wallSprite.setPosition((i * 32.0f) + 16.0f + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
                 wallSprite.setOrigin(16.0f, 16.0f);
                 SFML_WindowDrawSprite_ptr(_window, &wallSprite);
             }
@@ -376,7 +395,22 @@ void SFMLGame::display(const Game& game) {
     // AFFICHER LE SERPENT UNE SEULE FOIS, EN DEHORS DE LA GRILLE
     if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
         sf::FloatRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
-        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody());
+        display_good_part(game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode());
+    }
+
+    if (game.getMichaelMode() && _michaelModeTexture) {
+        sf::Sprite michaelSprite(*_michaelModeTexture);
+        michaelSprite.setPosition(0.0f, 0.0f);
+        michaelSprite.setOrigin(0.0f, 0.0f);
+        const sf::Vector2u windowSize = _window->getSize();
+        const sf::Vector2u textureSize = _michaelModeTexture->getSize();
+        if (textureSize.x != 0 && textureSize.y != 0) {
+            michaelSprite.setScale(
+                static_cast<float>(windowSize.x) / static_cast<float>(textureSize.x),
+                static_cast<float>(windowSize.y) / static_cast<float>(textureSize.y)
+            );
+        }
+        SFML_WindowDrawSprite_ptr(_window, &michaelSprite);
     }
 
     SFML_WindowDisplay_ptr(_window);
@@ -441,8 +475,8 @@ int SFMLGame::handleInput() {
 }
 
 extern "C" {
-    void* create_gui_sfml(int width, int height) {
-        return new SFMLGame(width, height);
+    void* create_gui_sfml(int width, int height, bool michaelMode) {
+        return new SFMLGame(width, height, michaelMode);
     }
 
     void destroy_gui_sfml(void* gui) {
