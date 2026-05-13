@@ -22,6 +22,7 @@ class GLGame
 		int _height;
 		int _cell_size;
 		Direction _lastDirection;
+		bool _michaelMode;
 
 		void drawRect(float x, float y, float w, float h, float r, float g, float b) const;
 		void drawQuad(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3,
@@ -38,7 +39,7 @@ class GLGame
 
 	public:
 		GLGame();
-		GLGame(int w, int h);
+		GLGame(int w, int h, bool michaelMode);
 		GLGame(const GLGame& other);
 		GLGame& operator=(const GLGame& other);
 		~GLGame();

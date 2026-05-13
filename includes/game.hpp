@@ -6,6 +6,8 @@
 # include <algorithm>
 # include <random>
 # include <sys/time.h>
+# include <mutex>
+# include <../miniaudio/miniaudio.h>
 
 #define TICK_RATE 150
 
@@ -47,17 +49,20 @@ class Game {
         std::pair<int, int> _wallPosition;
         struct timeval _spawnApple;
         int _score;
+        bool _michaelMode;
 
     public:
         Game();
-        Game(int height, int width);
+        Game(int height, int width, bool michaelMode);
         Game(const Game& other);
         Game& operator=(const Game& other);
         ~Game();
 
+        void setMichaelMode(bool enabled);
+        bool getMichaelMode() const;
         void displayGameArea();
         void changeDirection(Direction direction);
-        int moveSnake();
+        int moveSnake(int& onAppleSound, std::mutex& onAppleMutex);
         int checkDeath();
         int onApple();
         void generateApple();

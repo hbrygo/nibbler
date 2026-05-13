@@ -118,7 +118,7 @@ void Game::generateApple()
     gettimeofday(&_spawnApple, nullptr);
 }
 
-int Game::moveSnake() {
+int Game::moveSnake(int& onAppleSound, std::mutex& onAppleMutex) {
     if (_snakeBody.empty()) {
         return -1;
     }
@@ -149,6 +149,10 @@ int Game::moveSnake() {
         if (elapsed > 100) elapsed = 100;
         _score += 100 - elapsed;
         std::cout << "This apple give you " << 100 - elapsed << " points!" << std::endl;
+        {
+            std::lock_guard<std::mutex> lock(onAppleMutex);
+            onAppleSound++;
+        }
         generateApple();
     }
 
