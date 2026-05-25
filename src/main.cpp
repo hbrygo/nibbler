@@ -214,9 +214,9 @@ static bool drain_network(int socket_fd, std::vector<uint8_t>& buffer, std::vect
 }
 
 int main(int argc, char** argv) {
-    if (!((argc == 2) || (argc == 4) || (argc == 5))) {
+    if (!((argc == 3) || (argc == 4) || (argc == 5))) {
         std::cerr << "Usage: " << argv[0] << " <height> <width> <sfml/sdl3/gl> [1|2|online]" << std::endl;
-        std::cerr << "       " << argv[0] << " <port>" << std::endl;
+        std::cerr << "       " << argv[0] << " <server_ip> <port>" << std::endl;
         return 1;
     }
 
@@ -232,18 +232,21 @@ int main(int argc, char** argv) {
     int listen_port = 0;
     uint32_t seed = 0;
 
-    if (argc == 2) {
-        if (!isNumber(argv[1])) {
-            std::cerr << "Error: When using a port, the single argument must be a port number." << std::endl;
+    if (argc == 3) {
+        const char* server_ip = argv[1];
+
+        if (!isNumber(argv[2])) {
+            std::cerr << "Error: Invalid port number." << std::endl;
             return 1;
         }
-        int port = std::atoi(argv[1]);
+
+        int port = std::atoi(argv[2]);
         if (port <= 0 || port > 65535) {
             std::cerr << "Error: Invalid port number." << std::endl;
             return 1;
         }
         mode = MODE_ONLINE_CLIENT;
-        network_socket = create_client_socket("127.0.0.1", port);
+        network_socket = create_client_socket(server_ip, port);
         if (network_socket < 0) {
             std::cerr << "Error: Could not connect to host on port " << port << "." << std::endl;
             return 1;
