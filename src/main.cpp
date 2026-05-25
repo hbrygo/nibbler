@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <netdb.h>
 
 int currentLibrary = SDL3;
 
@@ -109,22 +110,35 @@ static int create_server_socket(int port, int& actual_port) {
 }
 
 static int create_client_socket(const char* host, int port) {
-    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_fd < 0) return -1;
+    struct addrinfo hints, *res, *p;
+    int client_fd = -1;
+    char port_str[6];
+    snprintf(port_str, sizeof(port_str), "%d", port);
 
-    sockaddr_in addr{};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
-        close(client_fd);
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // Allow IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(host, port_str, &hints, &res) != 0) {
         return -1;
     }
 
-    if (connect(client_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-        close(client_fd);
-        return -1;
+    for (p = res; p != NULL; p = p->ai_next) {
+        client_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (client_fd < 0) {
+            continue;
+        }
+
+        if (connect(client_fd, p->ai_addr, p->ai_addrlen) < 0) {
+            close(client_fd);
+            client_fd = -1;
+            continue;
+        }
+
+        break; // Successfully connected
     }
 
+    freeaddrinfo(res);
     return client_fd;
 }
 
