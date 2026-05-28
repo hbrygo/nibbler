@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SFMLGAME_HPP
+# define SFMLGAME_HPP
 
 #include "game.hpp"
 #include "nibbler.hpp"
@@ -37,3 +38,5 @@ class SFMLGame {
         void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael);
         int handleInput();
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SDL3GAME_HPP
+# define SDL3GAME_HPP
 
 # include <iostream>
 # include <dlfcn.h>
@@ -75,3 +76,5 @@ class SDL3Game {
         void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
         int handleInput();
 };
+
+#endif

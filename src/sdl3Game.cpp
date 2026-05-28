@@ -330,16 +330,14 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
                 double angle = 0.0;
                 SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
 
-                // Ta référence:
                 // snake_turn_left = coin (haut + gauche)
                 // snake_turn_right = coin (bas + gauche)
 
-                // On utilise UNE seule base et on la tourne
                 texture = _snakeTurnLeftTexture;
 
                 // Cas des 4 coins
                 if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) {
-                    angle = 270; // OK orientation de base
+                    angle = 270;
                 }
                 else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) {
                     angle = 180;
@@ -350,9 +348,9 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
                 else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) {
                     angle = 0;
                 } else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) {
-                    angle = 90; // OK orientation de base
+                    angle = 90;
                 } else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) {
-                    angle = 0; // OK orientation de base
+                    angle = 0;
                 } else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) {
                     angle = 180;
                 } else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) {
