@@ -305,6 +305,12 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
             int dx = tail.first - prev.first;
             int dy = tail.second - prev.second;
             renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx, dy));
+            std::cout << "Tail segment at (" << tail.first << ", " << tail.second << ") with delta (" << dx << ", " << dy << ")" << std::endl;
+            std::cout << "Tail segment angle: " << segmentAngleFromDelta(dx, dy) << " degrees" << std::endl;
+            std::cout << "Tail segment texture: " << (_snakeLeftRightTexture ? "Loaded" : "Not Loaded") << std::endl;
+            std::cerr << "previous Snake size: " << snakeBody.size() << " i " << i - 1 << " current position: (" << snakeBody[i - 1].first << ", " << snakeBody[i - 1].second << ")" << std::endl;
+            std::cerr << "prvious previous Snake size: " << snakeBody.size() << " i " << i - 2 << " current position: (" << snakeBody[i - 2].first << ", " << snakeBody[i - 2].second << ")" << std::endl;
+            std::cerr << "Snake size: " << snakeBody.size() << " i " << i << "current position: (" << snakeBody[i].first << ", " << snakeBody[i].second << ")" << std::endl;
         }
 
         // BODY
@@ -313,51 +319,41 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
             auto curr = snakeBody[i];
             auto next = snakeBody[i + 1];
 
-            int dx1 = curr.first - prev.first;
-            int dy1 = curr.second - prev.second;
+            int dx1 = prev.first - curr.first;
+            int dy1 = prev.second - curr.second;
 
             int dx2 = next.first - curr.first;
             int dy2 = next.second - curr.second;
 
-            // -------- STRAIGHT --------
-            if ((dx1 == dx2) && (dy1 == dy2)) {
-                renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx1, dy1));
+            // STRAIGHT
+            if ((dx1 == dx2) || (dy1 == dy2)) {
+                if (dx1 != 0)
+                    renderRotated(_snakeLeftRightTexture, 0);
+                else
+                    renderRotated(_snakeUpDownTexture, 0);
             }
 
-            // -------- TURN --------
+            // TURN
             else {
-                SDL_Texture* texture = nullptr;
-                double angle = 0.0;
-                SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
+                double angle = 0;
 
-                // snake_turn_left = coin (haut + gauche)
-                // snake_turn_right = coin (bas + gauche)
-
-                texture = _snakeTurnLeftTexture;
-
-                // Cas des 4 coins
-                if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) {
-                    angle = 270;
-                }
-                else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) {
-                    angle = 180;
-                }
-                else if (dx1 == 0 && dy1 == 1 && dx2 == 1 && dy2 == 0) {
+                // Haut + droite
+                if ((dy1 == -1 && dx2 == 1) || (dx1 == 1 && dy2 == -1))
                     angle = 90;
-                }
-                else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) {
-                    angle = 0;
-                } else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) {
-                    angle = 90;
-                } else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) {
-                    angle = 0;
-                } else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) {
-                    angle = 180;
-                } else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) {
-                    angle = 270;
-                }
 
-                SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
+                // Droite + bas
+                else if ((dx1 == 1 && dy2 == 1) || (dy1 == 1 && dx2 == 1))
+                    angle = 180;
+
+                // Bas + gauche
+                else if ((dy1 == 1 && dx2 == -1) || (dx1 == -1 && dy2 == 1))
+                    angle = 270;
+
+                // Gauche + haut
+                else if ((dx1 == -1 && dy2 == -1) || (dy1 == -1 && dx2 == -1))
+                    angle = 0;
+
+                renderRotated(_snakeTurnLeftTexture, angle);
             }
         }
     }
@@ -437,6 +433,11 @@ int SDL3Game::handleInput() {
             unsigned char* bytes = (unsigned char*)&event;
             int scancode = *(int*)(bytes + 24);  // offset 24 = scancode (little-endian int)
             
+            if (scancode == 19) {
+                
+                return 1000;                
+            }
+            std::cout << "[SDL3] Key down event: scancode=" << scancode << std::endl;
             if (scancode == SDL_SCANCODE_ESCAPE) {
                 return -1;
             }

@@ -163,6 +163,17 @@ int main(int argc, char** argv) {
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
         else if (input == RIGHT) game.changeDirection(RIGHT);
+        else if (input == 1000) {
+            std::cout << "Pausing game. Press P to resume." << std::endl;
+            while (true) {
+                int pauseInput = input_gui(gui);
+                if (pauseInput == 1000) {
+                    std::cout << "Resuming game." << std::endl;
+                    break;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
 
         auto now = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();

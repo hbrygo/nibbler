@@ -92,7 +92,18 @@ int Game::onApple() {
     const auto& head = _snakeBody.front();
     if (head == _applePosition) {
         _snakeSize++;
-        _snakeBody.push_back(_snakeBody.back());
+        std::pair<int, int> newSegment = _snakeBody.back();
+        std::pair<int, int> previous = _snakeBody[_snakeBody.size() - 2];
+        if (previous.first == newSegment.first && previous.second == newSegment.second + 1) {
+            newSegment.second += 1;
+        } else if (previous.first == newSegment.first && previous.second == newSegment.second - 1) {
+            newSegment.second -= 1;
+        } else if (previous.first == newSegment.first + 1 && previous.second == newSegment.second) {
+            newSegment.first += 1;
+        } else if (previous.first == newSegment.first - 1 && previous.second == newSegment.second) {
+            newSegment.first -= 1;
+        }
+        _snakeBody.push_back(newSegment);
         return 1;
     }
     return 0;
@@ -148,7 +159,7 @@ int Game::moveSnake(int& onAppleSound, std::mutex& onAppleMutex) {
         long elapsed = (now.tv_sec - _spawnApple.tv_sec) * 2;
         if (elapsed > 100) elapsed = 100;
         _score += 100 - elapsed;
-        std::cout << "This apple give you " << 100 - elapsed << " points!" << std::endl;
+        std::cerr << "This apple give you " << 100 - elapsed << " points!" << std::endl;
         {
             std::lock_guard<std::mutex> lock(onAppleMutex);
             onAppleSound++;

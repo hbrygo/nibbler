@@ -310,7 +310,7 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
             int dy2 = next.second - curr.second;
 
             // STRAIGHT LINE
-            if ((dx1 == dx2) && (dy1 == dy2)) {
+            if ((dx1 == 0 && dx2 == 0) || (dy1 == 0 && dy2 == 0)) {
                 sf::Sprite bodySprite(*_snakeUpDownTexture);
                 bodySprite.setPosition(centerX, centerY);
                 bodySprite.setOrigin(16.0f, 16.0f);
@@ -467,6 +467,10 @@ int SFMLGame::handleInput() {
                 std::cerr << "[INPUT] Mode 3" << std::endl;
                 currentLibrary = GL;
                 return 30;
+            }
+            if (event.key.code == sf::Keyboard::P) {
+                std::cerr << "[INPUT] P detected -> returning 1000 (pause)" << std::endl;
+                return 1000;
             }
         }
     }
