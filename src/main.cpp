@@ -24,6 +24,7 @@ struct GameConfig {
     std::string library = "sdl3";
 
     bool michaelMode = false;
+    bool despawnApple = false;
 
     bool multiplayer = false;
     bool online = false;
@@ -107,6 +108,7 @@ GameConfig runMenu()
     }
 
     if (mainChoice == 2) {
+        c.despawnApple = askChoice("Despawn Apple?", {"Yes", "No"}) == 1;
         c.width = askInt("Width", 10);
         c.height = askInt("Height", 10);
 
@@ -124,7 +126,6 @@ GameConfig runMenu()
     });
 
     if (multiChoice == 1) {
-
         c.width = askInt("Width", 10);
         c.height = askInt("Height", 10);
 
@@ -180,6 +181,7 @@ int main()
     GameConfig config = runMenu();
 
     bool michaelMode = config.michaelMode;
+    bool despawnApple = config.despawnApple;
 
     const char* selected_library = config.library.c_str();
 
@@ -250,7 +252,7 @@ int main()
     if (!load_lib(lib_path(currentLibrary), currentLibrary))
         return 1;
 
-    Game game(width, height, michaelMode);
+    Game game(width, height, michaelMode, despawnApple);
 
     bool running = true;
     auto last_move = std::chrono::high_resolution_clock::now();

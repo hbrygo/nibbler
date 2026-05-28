@@ -390,7 +390,14 @@ void SDL3Game::display(const Game& game) {
             int cell = game.getCell(x, y);
             if (cell == FOOD) {
                 if (_foodTexture) {
-                    SDL_RenderTexture_ptr(_renderer, _foodTexture, nullptr, &rect);
+                    timeval now;
+                    gettimeofday(&now, nullptr);
+                    long elapsed = (now.tv_sec - game.getSpawnApple().tv_sec) * 1000 + (now.tv_usec - game.getSpawnApple().tv_usec) / 1000;
+                    if (game.getAppelDespawned() && elapsed > (game.getWidth() + game.getHeight()) * 16) {
+                        // Apple despawned, don't render it
+                        continue;
+                    } else 
+                        SDL_RenderTexture_ptr(_renderer, _foodTexture, nullptr, &rect);
                 } else {
                     SDL_SetRenderDrawColor_ptr(_renderer, 255, 0, 0, 255);
                     SDL_RenderFillRect_ptr(_renderer, &rect);

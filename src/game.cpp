@@ -1,6 +1,6 @@
 #include "nibbler.hpp"
 
-Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}) {
+Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}), _despawnApple(false), _score(0), _michaelMode(false) {
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -10,7 +10,7 @@ Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}) 
     generateApple();
 }
 
-Game::Game(int height, int width, bool michaelMode) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _score(0), _michaelMode(michaelMode) {
+Game::Game(int height, int width, bool michaelMode, bool despawnApple) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode) {
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -20,7 +20,7 @@ Game::Game(int height, int width, bool michaelMode) : _gameAreaHeight(height), _
     generateApple();
 }
 
-Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeBody(other._snakeBody), _applePosition(other._applePosition) {}
+Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeBody(other._snakeBody), _applePosition(other._applePosition), _despawnApple(other._despawnApple) {}
 
 Game& Game::operator=(const Game& other) {
     if (this != &other) {
@@ -30,6 +30,7 @@ Game& Game::operator=(const Game& other) {
         _snakeSize = other._snakeSize;
         _snakeBody = other._snakeBody;
         _applePosition = other._applePosition;
+        _despawnApple = other._despawnApple;
     }
     return *this;
 }
@@ -205,4 +206,20 @@ void Game::setMichaelMode(bool enabled) {
 
 bool Game::getMichaelMode() const {
     return _michaelMode;
+}
+
+timeval Game::getSpawnApple() const {
+    return _spawnApple;
+}
+
+bool Game::getAppelDespawned() const {
+    return _despawnApple;
+}
+
+int Game::getWidth() const {
+    return _gameAreaWidth;
+}
+
+int Game::getHeight() const {
+    return _gameAreaHeight;
 }

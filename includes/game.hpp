@@ -48,16 +48,19 @@ class Game {
         std::pair<int, int> _applePosition;
         std::pair<int, int> _wallPosition;
         struct timeval _spawnApple;
+        bool _despawnApple;
         int _score;
         bool _michaelMode;
 
     public:
         Game();
-        Game(int height, int width, bool michaelMode);
+        Game(int height, int width, bool michaelMode, bool despawnApple);
         Game(const Game& other);
         Game& operator=(const Game& other);
         ~Game();
 
+        int getWidth() const;
+        int getHeight() const;
         void setMichaelMode(bool enabled);
         bool getMichaelMode() const;
         void displayGameArea();
@@ -66,6 +69,8 @@ class Game {
         int checkDeath();
         int onApple();
         void generateApple();
+        timeval getSpawnApple() const;
+        bool getAppelDespawned() const;
         int getCell(int x, int y) const;
         int getCurrentDirection() const;
         std::vector<std::pair<int, int>>& getSnakeBody();
