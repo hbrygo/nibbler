@@ -380,17 +380,17 @@ void SFMLGame::display(const Game& game) {
             int cell = game.getCell(i, j);
             if (cell == FOOD) {
                 timeval now;
-                    gettimeofday(&now, nullptr);
-                    long elapsed = (now.tv_sec - game.getSpawnApple().tv_sec) * 1000 + (now.tv_usec - game.getSpawnApple().tv_usec) / 1000;
-                    if (game.getAppelDespawned() && elapsed > (game.getWidth() + game.getHeight()) * 16) {
-                        // Apple despawned, don't render it
-                        continue;
-                    } else 
-                        sf::Sprite foodSprite(*_foodTexture);
-                        foodSprite.setPosition(((i * 32.0f) + 16.0f) + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
-                        foodSprite.setOrigin(16.0f, 16.0f);
-                        SFML_WindowDrawSprite_ptr(_window, &foodSprite);
-                    }
+                gettimeofday(&now, nullptr);
+                long elapsed = (now.tv_sec - game.getSpawnApple().tv_sec) * 1000 + (now.tv_usec - game.getSpawnApple().tv_usec) / 1000;
+                if (game.getAppelDespawned() && elapsed > (game.getWidth() + game.getHeight()) * 16) {
+                    // Apple despawned, don't render it
+                    continue;
+                } else {
+                    sf::Sprite foodSprite(*_foodTexture);
+                    foodSprite.setPosition(((i * 32.0f) + 16.0f) + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
+                    foodSprite.setOrigin(16.0f, 16.0f);
+                    SFML_WindowDrawSprite_ptr(_window, &foodSprite);
+                }
             } else if (cell == WALL) {
                 sf::Sprite wallSprite(*_wallTexture);
                 wallSprite.setPosition((i * 32.0f) + 16.0f + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
@@ -402,7 +402,6 @@ void SFMLGame::display(const Game& game) {
 
     // AFFICHER LE SERPENT UNE SEULE FOIS, EN DEHORS DE LA GRILLE
     if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
-        sf::FloatRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
         display_good_part(game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode());
     }
 
