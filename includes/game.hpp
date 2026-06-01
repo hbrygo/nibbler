@@ -21,10 +21,19 @@ enum Direction
     QUIT
 };
 
+enum InputAction
+{
+    P2_UP = 1001,
+    P2_DOWN = 1002,
+    P2_LEFT = 1003,
+    P2_RIGHT = 1004
+};
+
 enum CellType
 {
     EMPTY,
     SNAKE,
+    SNAKE_2,
     FOOD,
     WALL
 };
@@ -43,8 +52,12 @@ class Game {
         int _gameAreaWidth;
         std::vector<std::vector<CellType>> _gameArea;
         int _snakeSize;
+        int _snakeSize2;
+        int _nbPlayer;
         std::vector<std::pair<int, int>> _snakeBody;
+        std::vector<std::pair<int, int>> _snakeBody2;
         Direction _currentDirection;
+        Direction _currentDirection2;
         std::pair<int, int> _applePosition;
         std::pair<int, int> _wallPosition;
         struct timeval _spawnApple;
@@ -55,26 +68,35 @@ class Game {
     public:
         Game();
         Game(int height, int width, bool michaelMode, bool despawnApple);
+        Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple);
         Game(const Game& other);
         Game& operator=(const Game& other);
         ~Game();
 
         int getWidth() const;
         int getHeight() const;
+        int getNbPlayer() const;
         void setMichaelMode(bool enabled);
         bool getMichaelMode() const;
         void displayGameArea();
         void changeDirection(Direction direction);
+        void changeDirection2(Direction direction);
         int moveSnake(int& onAppleSound, std::mutex& onAppleMutex);
+        int moveSnake2(int& onAppleSound, std::mutex& onAppleMutex);
         int checkDeath();
+        int checkDeath2();
         int onApple();
+        int onApple2();
         void generateApple();
         timeval getSpawnApple() const;
         bool getAppelDespawned() const;
         int getCell(int x, int y) const;
         int getCurrentDirection() const;
+        int getCurrentDirection2() const;
         std::vector<std::pair<int, int>>& getSnakeBody();
         const std::vector<std::pair<int, int>>& getSnakeBody() const;
+        std::vector<std::pair<int, int>>& getSnakeBody2();
+        const std::vector<std::pair<int, int>>& getSnakeBody2() const;
 };
 
 #endif
