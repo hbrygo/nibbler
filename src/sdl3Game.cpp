@@ -13,6 +13,10 @@
 #define SDL_SCANCODE_RIGHT 0x4F
 #define SDL_SCANCODE_UP 0x52
 #define SDL_SCANCODE_DOWN 0x51
+#define SDL_SCANCODE_A 0x04
+#define SDL_SCANCODE_D 0x07
+#define SDL_SCANCODE_S 0x16
+#define SDL_SCANCODE_W 0x1A
 #define SDL_SCANCODE_ESCAPE 0x29
 #define SDL_SCANCODE_1 0x1E
 #define SDL_SCANCODE_2 0x1F
@@ -413,14 +417,17 @@ void SDL3Game::display(const Game& game) {
         }
     }
 
-    if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
-        SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
-        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode());
-    }
-
     if (game.getMichaelMode() && _michaelModeTexture) {
         SDL_FRect rect = { 0.0f, 0.0f, 1400.0f, 1800.0f };
         SDL_RenderTexture_ptr(_renderer, _michaelModeTexture, nullptr, &rect);
+    }
+
+    if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
+        SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
+        display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode());
+        if (game.getNbPlayer() >= 2) {
+            display_good_part(snakeRect, game.getCurrentDirection2(), game.getSnakeBody2(), game.getMichaelMode());
+        }
     }
 
     SDL_RenderPresent_ptr(_renderer);
@@ -460,6 +467,18 @@ int SDL3Game::handleInput() {
             }
             if (scancode == SDL_SCANCODE_DOWN) {
                 return DOWN;
+            }
+            if (scancode == SDL_SCANCODE_W) {
+                return P2_UP;
+            }
+            if (scancode == SDL_SCANCODE_S) {
+                return P2_DOWN;
+            }
+            if (scancode == SDL_SCANCODE_A) {
+                return P2_LEFT;
+            }
+            if (scancode == SDL_SCANCODE_D) {
+                return P2_RIGHT;
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (scancode == SDL_SCANCODE_1) {
