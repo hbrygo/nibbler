@@ -22,6 +22,7 @@ class GLGame
 		int _height;
 		int _cell_size;
 		Direction _lastDirection;
+		Direction _lastDirection2;
 		bool _michaelMode;
 
 		void drawRect(float x, float y, float w, float h, float r, float g, float b) const;

@@ -252,7 +252,7 @@ int main()
     if (!load_lib(lib_path(currentLibrary), currentLibrary))
         return 1;
 
-    Game game(width, height, michaelMode, despawnApple);
+    Game game(width, height, (config.multiplayer && !config.online) ? 2 : 1, michaelMode, despawnApple);
 
     bool running = true;
     auto last_move = std::chrono::high_resolution_clock::now();
@@ -273,6 +273,10 @@ int main()
         else if (input == DOWN) game.changeDirection(DOWN);
         else if (input == LEFT) game.changeDirection(LEFT);
         else if (input == RIGHT) game.changeDirection(RIGHT);
+        else if (config.multiplayer && !config.online && input == P2_UP) game.changeDirection2(UP);
+        else if (config.multiplayer && !config.online && input == P2_DOWN) game.changeDirection2(DOWN);
+        else if (config.multiplayer && !config.online && input == P2_LEFT) game.changeDirection2(LEFT);
+        else if (config.multiplayer && !config.online && input == P2_RIGHT) game.changeDirection2(RIGHT);
 
         auto now = std::chrono::high_resolution_clock::now();
         auto elapsed =
@@ -280,6 +284,8 @@ int main()
 
         if (elapsed >= TICK_RATE) {
             if (game.moveSnake(onAppleSound, onAppleMutex) == -1)
+                running = false;
+            if (running && config.multiplayer && !config.online && game.moveSnake2(onAppleSound, onAppleMutex) == -1)
                 running = false;
 
             last_move = now;

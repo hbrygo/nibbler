@@ -26,7 +26,9 @@ class SFMLGame {
         sf::Texture* _snakeTailTexture;
         sf::Texture* _michaelModeTexture;
         std::chrono::high_resolution_clock::time_point _lastMoveTime;
+        std::chrono::high_resolution_clock::time_point _lastMoveTime2;
         std::vector<std::pair<int, int>> _prevSnakeBody;
+        std::vector<std::pair<int, int>> _prevSnakeBody2;
 
     public:
         SFMLGame();
@@ -35,7 +37,9 @@ class SFMLGame {
         SFMLGame(const SFMLGame&);
         SFMLGame& operator=(const SFMLGame&);
         void display(const Game& game);
-        void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael);
+        void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael,
+            std::chrono::high_resolution_clock::time_point& lastMoveTime,
+            std::vector<std::pair<int, int>>& prevSnakeBody);
         int handleInput();
 };
 

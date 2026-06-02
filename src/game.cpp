@@ -1,26 +1,31 @@
 #include "nibbler.hpp"
 
-Game::Game() : _gameAreaHeight(10), _gameAreaWidth(10), _wallPosition({-1, -1}), _despawnApple(false), _score(0), _michaelMode(false) {
+Game::Game() : Game(10, 10, 1, false, false) {
+}
+
+Game::Game(int height, int width, bool michaelMode, bool despawnApple) : Game(height, width, 1, michaelMode, despawnApple) {
+}
+
+Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode) {
+    _nbPlayer = nbPlayer < 1 ? 1 : nbPlayer;
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
+    _snakeSize2 = 4;
     for (int i = 0; i < _snakeSize; ++i) {
         _snakeBody.push_back({_gameAreaHeight / 2, _gameAreaWidth / 2 - i});
+    }
+    if (_nbPlayer >= 2) {
+        int rightHeadCol = std::max(_gameAreaWidth - 4, 4);
+        for (int i = 0; i < _snakeSize2; ++i) {
+            _snakeBody2.push_back({_gameAreaHeight / 2 + 1, rightHeadCol + i});
+        }
+        _currentDirection2 = LEFT;
     }
     _currentDirection = RIGHT;
     generateApple();
 }
 
-Game::Game(int height, int width, bool michaelMode, bool despawnApple) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode) {
-    _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
-    _snakeSize = 4;
-    for (int i = 0; i < _snakeSize; ++i) {
-        _snakeBody.push_back({_gameAreaHeight / 2, _gameAreaWidth / 2 - i});
-    }
-    _currentDirection = RIGHT;
-    generateApple();
-}
-
-Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeBody(other._snakeBody), _applePosition(other._applePosition), _despawnApple(other._despawnApple) {}
+Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeSize2(other._snakeSize2), _nbPlayer(other._nbPlayer), _snakeBody(other._snakeBody), _snakeBody2(other._snakeBody2), _currentDirection(other._currentDirection), _currentDirection2(other._currentDirection2), _applePosition(other._applePosition), _wallPosition(other._wallPosition), _spawnApple(other._spawnApple), _despawnApple(other._despawnApple), _score(other._score), _michaelMode(other._michaelMode) {}
 
 Game& Game::operator=(const Game& other) {
     if (this != &other) {
@@ -28,9 +33,18 @@ Game& Game::operator=(const Game& other) {
         _gameAreaWidth = other._gameAreaWidth;
         _gameArea = other._gameArea;
         _snakeSize = other._snakeSize;
+        _snakeSize2 = other._snakeSize2;
+        _nbPlayer = other._nbPlayer;
         _snakeBody = other._snakeBody;
+        _snakeBody2 = other._snakeBody2;
+        _currentDirection = other._currentDirection;
+        _currentDirection2 = other._currentDirection2;
         _applePosition = other._applePosition;
+        _wallPosition = other._wallPosition;
+        _spawnApple = other._spawnApple;
         _despawnApple = other._despawnApple;
+        _score = other._score;
+        _michaelMode = other._michaelMode;
     }
     return *this;
 }
@@ -47,6 +61,17 @@ void Game::displayGameArea()
                     std::cout << "S ";
                     printed = true;
                     break;
+                }
+            }
+            if (!printed) {
+                if (_nbPlayer >= 2) {
+                    for (const auto &segment : _snakeBody2) {
+                        if (segment.first == i && segment.second == j) {
+                            std::cout << "S ";
+                            printed = true;
+                            break;
+                        }
+                    }
                 }
             }
             if (!printed) {
@@ -74,6 +99,18 @@ void Game::changeDirection(Direction direction) {
     _currentDirection = direction;
 }
 
+void Game::changeDirection2(Direction direction) {
+    if ((getCurrentDirection2() == UP && direction == DOWN) ||
+        (getCurrentDirection2() == DOWN && direction == UP) ||
+        (getCurrentDirection2() == LEFT && direction == RIGHT) ||
+        (getCurrentDirection2() == RIGHT && direction == LEFT)) {
+        std::cerr << "Snake 2 is already moving in that direction!" << std::endl;
+        return;
+    }
+    std::cout << "Changing direction for Snake 2 to: " << (direction == UP ? "UP" : direction == DOWN ? "DOWN" : direction == LEFT ? "LEFT" : "RIGHT") << std::endl;
+    _currentDirection2 = direction;
+}
+
 int Game::checkDeath() {
     const auto& head = _snakeBody.front();
     // wall
@@ -83,6 +120,35 @@ int Game::checkDeath() {
     // snake
     for (size_t i = 1; i < _snakeBody.size(); ++i) {
         if (head == _snakeBody[i]) {
+            return -1;
+        }
+    }
+    if (_nbPlayer >= 2) {
+        for (const auto& segment : _snakeBody2) {
+            if (head == segment) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+int Game::checkDeath2() {
+    if (_nbPlayer < 2 || _snakeBody2.empty()) {
+        return 0;
+    }
+
+    const auto& head = _snakeBody2.front();
+    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth) {
+        return -1;
+    }
+    for (size_t i = 1; i < _snakeBody2.size(); ++i) {
+        if (head == _snakeBody2[i]) {
+            return -1;
+        }
+    }
+    for (const auto& segment : _snakeBody) {
+        if (head == segment) {
             return -1;
         }
     }
@@ -110,9 +176,39 @@ int Game::onApple() {
     return 0;
 }
 
+int Game::onApple2() {
+    if (_nbPlayer < 2 || _snakeBody2.empty()) {
+        return 0;
+    }
+
+    const auto& head = _snakeBody2.front();
+    if (head == _applePosition) {
+        _snakeSize2++;
+        std::pair<int, int> newSegment = _snakeBody2.back();
+        std::pair<int, int> previous = _snakeBody2[_snakeBody2.size() - 2];
+        if (previous.first == newSegment.first && previous.second == newSegment.second + 1) {
+            newSegment.second += 1;
+        } else if (previous.first == newSegment.first && previous.second == newSegment.second - 1) {
+            newSegment.second -= 1;
+        } else if (previous.first == newSegment.first + 1 && previous.second == newSegment.second) {
+            newSegment.first += 1;
+        } else if (previous.first == newSegment.first - 1 && previous.second == newSegment.second) {
+            newSegment.first -= 1;
+        }
+        _snakeBody2.push_back(newSegment);
+        return 1;
+    }
+    return 0;
+}
+
 void Game::generateApple()
 {
-    if (_snakeBody.size() >= static_cast<size_t>(_gameAreaHeight) * static_cast<size_t>(_gameAreaWidth)) {
+    size_t occupiedCells = _snakeBody.size();
+    if (_nbPlayer >= 2) {
+        occupiedCells += _snakeBody2.size();
+    }
+
+    if (occupiedCells >= static_cast<size_t>(_gameAreaHeight) * static_cast<size_t>(_gameAreaWidth)) {
         _applePosition = {-1, -1};
         return;
     }
@@ -124,7 +220,8 @@ void Game::generateApple()
     std::pair<int,int> pos;
     do {
         pos = { rowDist(rng), colDist(rng) };
-    } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end());
+    } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end() ||
+        (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), pos) != _snakeBody2.end()));
 
     _applePosition = pos;
     gettimeofday(&_spawnApple, nullptr);
@@ -177,10 +274,64 @@ int Game::moveSnake(int& onAppleSound, std::mutex& onAppleMutex) {
     return 0;
 }
 
+int Game::moveSnake2(int& onAppleSound, std::mutex& onAppleMutex) {
+    if (_nbPlayer < 2 || _snakeBody2.empty()) {
+        return 0;
+    }
+
+    std::pair<int, int> newHead = _snakeBody2.front();
+
+    if (_currentDirection2 == UP) {
+        newHead.second -= 1;
+    } else if (_currentDirection2 == DOWN) {
+        newHead.second += 1;
+    } else if (_currentDirection2 == LEFT) {
+        newHead.first -= 1;
+    } else if (_currentDirection2 == RIGHT) {
+        newHead.first += 1;
+    } else {
+        return 0;
+    }
+
+    for (size_t i = _snakeBody2.size() - 1; i > 0; --i) {
+        _snakeBody2[i] = _snakeBody2[i - 1];
+    }
+    _snakeBody2[0] = newHead;
+
+    if (onApple2()) {
+        struct timeval now;
+        gettimeofday(&now, nullptr);
+        long elapsed = (now.tv_sec - _spawnApple.tv_sec) * 2;
+        if (elapsed > 100) elapsed = 100;
+        _score += 100 - elapsed;
+        std::cerr << "This apple give you " << 100 - elapsed << " points!" << std::endl;
+        {
+            std::lock_guard<std::mutex> lock(onAppleMutex);
+            onAppleSound++;
+        }
+        generateApple();
+    }
+
+    if (checkDeath2()) {
+        std::cout << "Score: " << _score << std::endl;
+        std::cout << "Game Over!" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
 int Game::getCell(int x, int y) const {
     for (const auto& segment : _snakeBody) {
         if (segment.first == x && segment.second == y) {
             return SNAKE;
+        }
+    }
+    if (_nbPlayer >= 2) {
+        for (const auto& segment : _snakeBody2) {
+            if (segment.first == x && segment.second == y) {
+                return SNAKE_2;
+            }
         }
     }
     if (_applePosition.first == x && _applePosition.second == y) {
@@ -196,8 +347,24 @@ int Game::getCurrentDirection() const {
     return _currentDirection;
 }
 
+int Game::getCurrentDirection2() const {
+    return _currentDirection2;
+}
+
 const std::vector<std::pair<int, int>>& Game::getSnakeBody() const {
     return _snakeBody;
+}
+
+std::vector<std::pair<int, int>>& Game::getSnakeBody() {
+    return _snakeBody;
+}
+
+std::vector<std::pair<int, int>>& Game::getSnakeBody2() {
+    return _snakeBody2;
+}
+
+const std::vector<std::pair<int, int>>& Game::getSnakeBody2() const {
+    return _snakeBody2;
 }
 
 void Game::setMichaelMode(bool enabled) {
@@ -222,4 +389,8 @@ int Game::getWidth() const {
 
 int Game::getHeight() const {
     return _gameAreaHeight;
+}
+
+int Game::getNbPlayer() const {
+    return _nbPlayer;
 }

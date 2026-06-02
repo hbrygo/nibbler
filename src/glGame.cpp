@@ -77,6 +77,20 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
+static int directionToP2Action(Direction direction) {
+    switch (direction) {
+        case UP:
+            return P2_UP;
+        case DOWN:
+            return P2_DOWN;
+        case LEFT:
+            return P2_LEFT;
+        case RIGHT:
+        default:
+            return P2_RIGHT;
+    }
+}
+
 static void unload_symbols() {
     if (glfw_handle) {
         dlclose(glfw_handle);
@@ -191,7 +205,7 @@ void GLGame::drawLine(float x0, float y0, float x1, float y1, float r, float g, 
 
 bool GLGame::isSolidCell(const Game& game, int x, int y) {
     const int cell = game.getCell(x, y);
-    return cell == SNAKE || cell == WALL || cell == FOOD;
+    return cell == SNAKE || cell == SNAKE_2 || cell == WALL || cell == FOOD;
 }
 
 void GLGame::renderProjectedFloorGrid(double posX, double posY, double dirX, double dirY, int fbw, int fbh) const {
@@ -422,7 +436,7 @@ void GLGame::renderRaycast(const Game& game, int fbw, int fbh) const {
             }
 
             hitCell = game.getCell(mapX, mapY);
-            if (hitCell == SNAKE || hitCell == WALL || hitCell == FOOD) {
+            if (hitCell == SNAKE || hitCell == SNAKE_2 || hitCell == WALL || hitCell == FOOD) {
                 hit = true;
             }
         }
@@ -499,7 +513,7 @@ void GLGame::renderMiniMap(const Game& game, int fbw, int fbh) const {
             const int cell = game.getCell(x, y);
             if (cell == FOOD) {
                 drawRect(px + 2.0f, py + 2.0f, cellSize - 4.0f, cellSize - 4.0f, 0.90f, 0.20f, 0.16f);
-            } else if (cell == SNAKE) {
+            } else if (cell == SNAKE || cell == SNAKE_2) {
                 drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.16f, 0.78f, 0.25f);
             } else if (cell == WALL) {
                 drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.60f, 0.60f, 0.60f);
@@ -545,7 +559,7 @@ GLGame::GLGame()
 }
 
 GLGame::GLGame(int w, int h, bool michaelMode)
-    : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32), _lastDirection(RIGHT) {
+    : _window(nullptr), _width(std::max(10, w)), _height(std::max(10, h)), _cell_size(32), _lastDirection(RIGHT), _lastDirection2(LEFT) {
     if (!load_glfw_gl_symbols()) {
         return;
     }
@@ -597,6 +611,7 @@ GLGame::GLGame(const GLGame& other) {
         _height = other._height;
         _cell_size = other._cell_size;
         _lastDirection = other._lastDirection;
+        _lastDirection2 = other._lastDirection2;
 
         if (other.isReady()) {
             *this = GLGame(_width, _height, other._michaelMode);
@@ -612,6 +627,7 @@ GLGame& GLGame::operator=(const GLGame& other) {
         std::swap(_height, temp._height);
         std::swap(_cell_size, temp._cell_size);
         std::swap(_lastDirection, temp._lastDirection);
+        std::swap(_lastDirection2, temp._lastDirection2);
         std::swap(_michaelMode, temp._michaelMode);
     }
     return *this;
@@ -642,6 +658,9 @@ void GLGame::display(const Game& game) {
     glClear_ptr(GL_COLOR_BUFFER_BIT);
 
     _lastDirection = static_cast<Direction>(game.getCurrentDirection());
+    if (game.getNbPlayer() >= 2) {
+        _lastDirection2 = static_cast<Direction>(game.getCurrentDirection2());
+    }
 
     renderRaycast(game, fbw, fbh);
     renderMiniMap(game, fbw, fbh);
@@ -689,6 +708,16 @@ int GLGame::handleInput() {
     if (edge_pressed[GLFW_KEY_RIGHT]) {
         edge_pressed.clear();
         return turnRight(_lastDirection);
+    }
+    if (edge_pressed[GLFW_KEY_A]) {
+        const Direction nextDirection = turnLeft(_lastDirection2);
+        edge_pressed.clear();
+        return directionToP2Action(nextDirection);
+    }
+    if (edge_pressed[GLFW_KEY_D]) {
+        const Direction nextDirection = turnRight(_lastDirection2);
+        edge_pressed.clear();
+        return directionToP2Action(nextDirection);
     }
 
     edge_pressed.clear();
