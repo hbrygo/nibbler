@@ -69,6 +69,7 @@ SFMLGame::SFMLGame() : _window(nullptr), _width(0), _height(0), _michaelMode(fal
     _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
     _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
     _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
+    _snakeHeadTurnLeftTexture(nullptr), _snakeHeadTurnRightTexture(nullptr),
     _snakeTailTexture(nullptr), _michaelModeTexture(nullptr) {
 }
 
@@ -77,7 +78,8 @@ SFMLGame::SFMLGame(const SFMLGame& other) : _window(other._window), _width(other
     _snakeTurnRightTexture(other._snakeTurnRightTexture), _snakeTurnLeftTexture(other._snakeTurnLeftTexture),
     _foodTexture(other._foodTexture), _backgroundTexture1(other._backgroundTexture1),
     _backgroundTexture2(other._backgroundTexture2), _wallTexture(other._wallTexture),
-    _snakeHeadTexture(other._snakeHeadTexture), _snakeTailTexture(other._snakeTailTexture), _michaelModeTexture(other._michaelModeTexture) {
+    _snakeHeadTexture(other._snakeHeadTexture), _snakeHeadTurnLeftTexture(other._snakeHeadTurnLeftTexture),
+    _snakeHeadTurnRightTexture(other._snakeHeadTurnRightTexture), _snakeTailTexture(other._snakeTailTexture), _michaelModeTexture(other._michaelModeTexture) {
 }
 
 SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
@@ -95,6 +97,8 @@ SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
         _backgroundTexture2 = other._backgroundTexture2;
         _wallTexture = other._wallTexture;
         _snakeHeadTexture = other._snakeHeadTexture;
+        _snakeHeadTurnLeftTexture = other._snakeHeadTurnLeftTexture;
+        _snakeHeadTurnRightTexture = other._snakeHeadTurnRightTexture;
         _snakeTailTexture = other._snakeTailTexture;
         _michaelModeTexture = other._michaelModeTexture;
     }
@@ -105,7 +109,7 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
     _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
     _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
     _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
-    _snakeTailTexture(nullptr), _michaelModeTexture(nullptr) {
+    _snakeHeadTurnLeftTexture(nullptr), _snakeHeadTurnRightTexture(nullptr), _snakeTailTexture(nullptr), _michaelModeTexture(nullptr) {
     std::cerr << "[SFML] Initializing SFML Game..." << std::endl;
 
     if (!load_sfml_symbols()) {
@@ -180,6 +184,16 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
         std::cerr << "[SFML] Error: Unable to load snake_head_up.png" << std::endl;
     }
 
+    _snakeHeadTurnLeftTexture = SFML_LoadTexture_ptr("textureSFML/snake_head_turn_left.png");
+    if (!_snakeHeadTurnLeftTexture) {
+        std::cerr << "[SFML] Error: Unable to load snake_head_turn_left.png" << std::endl;
+    }
+
+    _snakeHeadTurnRightTexture = SFML_LoadTexture_ptr("textureSFML/snake_head_turn_right.png");
+    if (!_snakeHeadTurnRightTexture) {
+        std::cerr << "[SFML] Error: Unable to load snake_head_turn_right.png" << std::endl;
+    }
+
     _snakeTailTexture = SFML_LoadTexture_ptr("textureSFML/snake_tail_up.png");
     if (!_snakeTailTexture) {
         std::cerr << "[SFML] Error: Unable to load snake_tail_up.png" << std::endl;
@@ -207,6 +221,8 @@ SFMLGame::~SFMLGame() {
     if (_backgroundTexture2) SFML_DestroyTexture_ptr(_backgroundTexture2);
     if (_wallTexture) SFML_DestroyTexture_ptr(_wallTexture);
     if (_snakeHeadTexture) SFML_DestroyTexture_ptr(_snakeHeadTexture);
+    if (_snakeHeadTurnLeftTexture) SFML_DestroyTexture_ptr(_snakeHeadTurnLeftTexture);
+    if (_snakeHeadTurnRightTexture) SFML_DestroyTexture_ptr(_snakeHeadTurnRightTexture);
     if (_snakeTailTexture) SFML_DestroyTexture_ptr(_snakeTailTexture);
     if (_michaelModeTexture) SFML_DestroyTexture_ptr(_michaelModeTexture);
     std::cerr << "[SFML] SFML Game destroyed" << std::endl;
@@ -229,7 +245,6 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
     const float offsetX = modeMichael ? 640.0f : 0.0f;
     const float offsetY = modeMichael ? 350.0f : 0.0f;
     
-    // Initialiser _prevSnakeBody au premier appel
     if (_prevSnakeBody.empty()) {
         _prevSnakeBody = snakeBody;
         _lastMoveTime = std::chrono::high_resolution_clock::now();
@@ -237,13 +252,11 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
     
     auto now = std::chrono::high_resolution_clock::now();
     
-    // Détecter si le serpent a bougé
     if (_prevSnakeBody != snakeBody) {
         _lastMoveTime = now;
         _prevSnakeBody = snakeBody;
     }
     
-    // Calculer le temps écoulé depuis le dernier mouvement (en millisecondes)
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - _lastMoveTime).count();
     float progress = std::min(1.0f, elapsed / 150.0f);  // TICK_RATE = 150ms
     
@@ -263,7 +276,6 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
     };
 
     for (size_t i = 0; i < snakeBody.size(); ++i) {
-        // Calculer la position interpolée du segment
         float centerX, centerY;
         if (i < _prevSnakeBody.size()) {
             float oldX = (_prevSnakeBody[i].first * 32.0f + 16.0f) + offsetX;
@@ -277,13 +289,97 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
             centerY = (snakeBody[i].second * 32.0f + 16.0f) + offsetY;
         }
 
-        // HEAD
         if (i == 0) {
+            int fromX = snakeBody[1].first - snakeBody[0].first;
+            int fromY = snakeBody[1].second - snakeBody[0].second;
+
             sf::Sprite headSprite(*_snakeHeadTexture);
             headSprite.setPosition(centerX, centerY);
-            headSprite.setOrigin(16.0f + (0.25 * getDir(currentDirection, 'x')), 16.0f + (0.25 * getDir(currentDirection, 'y')));
-            headSprite.setRotation(directionAngle(currentDirection));
-            SFML_WindowDrawSprite_ptr(_window, &headSprite);
+            headSprite.setOrigin(
+                16.0f + (0.25 * getDir(currentDirection, 'x')),
+                16.0f + (0.25 * getDir(currentDirection, 'y'))
+            );
+
+            if ((currentDirection == UP    && fromY == 1)  ||
+                (currentDirection == DOWN  && fromY == -1) ||
+                (currentDirection == LEFT  && fromX == 1)  ||
+                (currentDirection == RIGHT && fromX == -1))
+            {
+                headSprite.setRotation(directionAngle(currentDirection));
+                SFML_WindowDrawSprite_ptr(_window, &headSprite);
+            }
+
+            else if (currentDirection == UP && fromX == -1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(0.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == UP && fromX == 1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(0.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == DOWN && fromX == -1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(180.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == DOWN && fromX == 1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(180.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == LEFT && fromY == -1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(270.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == LEFT && fromY == 1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(270.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == RIGHT && fromY == -1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(90.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == RIGHT && fromY == 1)
+            {
+                sf::Sprite turn(*_snakeHeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(90.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
         }
         // TAIL
         else if (i == snakeBody.size() - 1) {
@@ -385,7 +481,7 @@ void SFMLGame::display(const Game& game) {
                     if (game.getAppelDespawned() && elapsed > (game.getWidth() + game.getHeight()) * 16) {
                         // Apple despawned, don't render it
                         continue;
-                    } else 
+                    } else {
                         sf::Sprite foodSprite(*_foodTexture);
                         foodSprite.setPosition(((i * 32.0f) + 16.0f) + offsetX, ((j * 32.0f) + 16.0f) + offsetY);
                         foodSprite.setOrigin(16.0f, 16.0f);

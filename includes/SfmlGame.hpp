@@ -23,6 +23,8 @@ class SFMLGame {
         sf::Texture* _backgroundTexture2;
         sf::Texture* _wallTexture;
         sf::Texture* _snakeHeadTexture;
+        sf::Texture* _snakeHeadTurnLeftTexture;
+        sf::Texture* _snakeHeadTurnRightTexture;
         sf::Texture* _snakeTailTexture;
         sf::Texture* _michaelModeTexture;
         std::chrono::high_resolution_clock::time_point _lastMoveTime;
