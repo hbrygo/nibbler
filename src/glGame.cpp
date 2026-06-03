@@ -208,6 +208,19 @@ bool GLGame::isSolidCell(const Game& game, int x, int y) {
     return cell == SNAKE || cell == SNAKE_2 || cell == WALL || cell == FOOD;
 }
 
+static bool shouldRenderApple(const Game& game) {
+    struct timeval now;
+    gettimeofday(&now, nullptr);
+
+    long elapsed = (now.tv_sec - game.getSpawnApple().tv_sec) * 1000 +
+        (now.tv_usec - game.getSpawnApple().tv_usec) / 1000;
+
+    if (game.getAppelDespawned() && elapsed > (game.getWidth() + game.getHeight()) * 16) {
+        return false;
+    }
+    return true;
+}
+
 void GLGame::renderProjectedFloorGrid(double posX, double posY, double dirX, double dirY, int fbw, int fbh) const {
     struct ProjectedTile {
         float x0;
@@ -436,6 +449,9 @@ void GLGame::renderRaycast(const Game& game, int fbw, int fbh) const {
             }
 
             hitCell = game.getCell(mapX, mapY);
+            if (hitCell == FOOD && !shouldRenderApple(game)) {
+                continue;
+            }
             if (hitCell == SNAKE || hitCell == SNAKE_2 || hitCell == WALL || hitCell == FOOD) {
                 hit = true;
             }
@@ -512,7 +528,9 @@ void GLGame::renderMiniMap(const Game& game, int fbw, int fbh) const {
 
             const int cell = game.getCell(x, y);
             if (cell == FOOD) {
-                drawRect(px + 2.0f, py + 2.0f, cellSize - 4.0f, cellSize - 4.0f, 0.90f, 0.20f, 0.16f);
+                if (shouldRenderApple(game)) {
+                    drawRect(px + 2.0f, py + 2.0f, cellSize - 4.0f, cellSize - 4.0f, 0.90f, 0.20f, 0.16f);
+                }
             } else if (cell == SNAKE || cell == SNAKE_2) {
                 drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.16f, 0.78f, 0.25f);
             } else if (cell == WALL) {
