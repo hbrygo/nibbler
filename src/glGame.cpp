@@ -490,7 +490,11 @@ void GLGame::renderRaycast(const Game& game, int fbw, int fbh) const {
         float wallR = 0.20f * shade * sideShade;
         float wallG = 0.72f * shade * sideShade;
         float wallB = 0.30f * shade * sideShade;
-        if (hitCell == FOOD) {
+        if (hitCell == SNAKE_2) {
+            wallR = 0.95f * shade * sideShade;
+            wallG = 0.55f * shade * sideShade;
+            wallB = 0.12f * shade * sideShade;
+        } else if (hitCell == FOOD) {
             wallR = 0.90f * shade * sideShade;
             wallG = 0.18f * shade * sideShade;
             wallB = 0.14f * shade * sideShade;
@@ -531,8 +535,10 @@ void GLGame::renderMiniMap(const Game& game, int fbw, int fbh) const {
                 if (shouldRenderApple(game)) {
                     drawRect(px + 2.0f, py + 2.0f, cellSize - 4.0f, cellSize - 4.0f, 0.90f, 0.20f, 0.16f);
                 }
-            } else if (cell == SNAKE || cell == SNAKE_2) {
+            } else if (cell == SNAKE) {
                 drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.16f, 0.78f, 0.25f);
+            } else if (cell == SNAKE_2) {
+                drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.95f, 0.55f, 0.12f);
             } else if (cell == WALL) {
                 drawRect(px + 1.0f, py + 1.0f, cellSize - 2.0f, cellSize - 2.0f, 0.60f, 0.60f, 0.60f);
             }
