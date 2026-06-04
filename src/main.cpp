@@ -610,6 +610,37 @@ int main()
         }
     }
 
+    sound_thread = std::thread([&]() {
+        ma_engine engine;
+        if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
+            std::cerr << "Failed to initialize audio engine" << std::endl;
+            return;
+        }
+
+        while (soundRunning) {
+            bool shouldPlay = false;
+            {
+                std::lock_guard<std::mutex> lock(onAppleMutex);
+                if (onAppleSound > 0) {
+                    --onAppleSound;
+                    shouldPlay = true;
+                }
+            }
+
+            if (shouldPlay) {
+                std::cout << "Playing apple sound effect!" << std::endl;
+                if (ma_engine_play_sound(&engine, "miniaudio/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
+                    std::cerr << "Failed to play sound" << std::endl;
+                }
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+
+        ma_engine_uninit(&engine);
+    });
+
+
     Game game(width, height, nbPlayer, michaelMode, despawnApple);
 
     bool running = true;
@@ -703,6 +734,17 @@ int main()
             else if (mode == MODE_LOCAL && input == P2_DOWN) game.changeDirection2(DOWN);
             else if (mode == MODE_LOCAL && input == P2_LEFT) game.changeDirection2(LEFT);
             else if (mode == MODE_LOCAL && input == P2_RIGHT) game.changeDirection2(RIGHT);
+            else if (input == 1000) {
+                std::cout << "Pausing game. Press P to resume." << std::endl;
+                while (true) {
+                    int pauseInput = input_gui(gui);
+                    if (pauseInput == 1000) {
+                        std::cout << "Resuming game." << std::endl;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+            }
         }
 
         auto now = std::chrono::high_resolution_clock::now();
@@ -720,17 +762,23 @@ int main()
         else {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        std::cout << "\r[DEBUG] Elapsed: " << elapsed << "ms, OnAppleSound: " << onAppleSound << "    " << std::flush;
     }
+
+    std::cout << "\nExiting game...\n";
 
     soundRunning = false;
 
     if (sound_thread.joinable())
         sound_thread.join();
 
+    std::cout << "Game exited cleanly.\n";
+
     if (gui) destroy_gui(gui);
     if (handle) dlclose(handle);
     if (network_socket >= 0) close(network_socket);
     if (server_socket >= 0) close(server_socket);
 
+    std::cerr << "Goodbye!" << std::endl;
     return 0;
 }

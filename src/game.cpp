@@ -49,7 +49,9 @@ Game& Game::operator=(const Game& other) {
     return *this;
 }
 
-Game::~Game() {}
+Game::~Game() {
+    std::cout << "********************************** coucou **********************************" << std::endl;
+}
 
 void Game::displayGameArea()
 {

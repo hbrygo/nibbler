@@ -617,6 +617,7 @@ GLGame::GLGame(int w, int h, bool michaelMode)
 }
 
 GLGame::~GLGame() {
+    std::cerr << "[GL] Cleaning up resources..." << std::endl;
     if (_window && glfwDestroyWindow_ptr) {
         glfwDestroyWindow_ptr(_window);
         _window = nullptr;
@@ -626,6 +627,7 @@ GLGame::~GLGame() {
         glfw_initialized = false;
     }
     unload_symbols();
+    std::cerr << "[GL] Resources cleaned up" << std::endl;
 }
 
 GLGame::GLGame(const GLGame& other) {

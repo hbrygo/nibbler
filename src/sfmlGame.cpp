@@ -213,6 +213,7 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
 }
 
 SFMLGame::~SFMLGame() {
+    std::cerr << "[SFML] Cleaning up resources..." << std::endl;
     if (_window) {
         SFML_WindowClose_ptr(_window);
         SFML_DestroyRenderWindow_ptr(_window);

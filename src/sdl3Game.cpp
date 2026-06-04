@@ -255,6 +255,7 @@ SDL3Game::SDL3Game(int w, int h, bool michaelMode) : _window(nullptr), _renderer
 }
 
 SDL3Game::~SDL3Game() {
+    std::cerr << "[SDL3] Cleaning up resources..." << std::endl;
     if (_snakeUpDownTexture) SDL_DestroyTexture_ptr(_snakeUpDownTexture);
     if (_snakeLeftRightTexture) SDL_DestroyTexture_ptr(_snakeLeftRightTexture);
     if (_snakeTurnRightTexture) SDL_DestroyTexture_ptr(_snakeTurnRightTexture);
@@ -266,6 +267,7 @@ SDL3Game::~SDL3Game() {
     if (_window) SDL_DestroyWindow_ptr(_window);
     if (_michaelModeTexture) SDL_DestroyTexture_ptr(_michaelModeTexture);
     SDL_Quit_ptr();
+    std::cerr << "[SDL3] Resources cleaned up and SDL_Quit called" << std::endl;
 }
 
 void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael) {
