@@ -95,7 +95,6 @@ void Game::changeDirection(Direction direction) {
         std::cerr << "Snake is already moving in that direction!" << std::endl;
         return;
     }
-    std::cout << "Changing direction to: " << (direction == UP ? "UP" : direction == DOWN ? "DOWN" : direction == LEFT ? "LEFT" : "RIGHT") << std::endl;
     _currentDirection = direction;
 }
 
@@ -107,7 +106,6 @@ void Game::changeDirection2(Direction direction) {
         std::cerr << "Snake 2 is already moving in that direction!" << std::endl;
         return;
     }
-    std::cout << "Changing direction for Snake 2 to: " << (direction == UP ? "UP" : direction == DOWN ? "DOWN" : direction == LEFT ? "LEFT" : "RIGHT") << std::endl;
     _currentDirection2 = direction;
 }
 

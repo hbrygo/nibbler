@@ -331,20 +331,13 @@ int main()
         }
     }
 
-    std::cout << "\nExiting game...\n";
-
     soundRunning = false;
 
     if (sound_thread.joinable())
         sound_thread.join();
-
-    std::cout << "Game exited cleanly.\n";
-
     if (gui) destroy_gui(gui);
     if (handle) dlclose(handle);
     if (network_socket >= 0) close(network_socket);
     if (server_socket >= 0) close(server_socket);
-
-    std::cerr << "Goodbye!" << std::endl;
     return 0;
 }
