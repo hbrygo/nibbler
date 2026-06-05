@@ -82,10 +82,26 @@ int askChoice(const std::string& title, const std::vector<std::string>& options)
 
 int askInt(const std::string& label, int def)
 {
-    std::string s;
-    std::cout << label << " (defaut " << def << "): ";
-    std::getline(std::cin >> std::ws, s);
-    return s.empty() ? def : std::stoi(s);
+    while (true) {
+        std::string s;
+
+        std::cout << label << " (defaut " << def << "): ";
+        std::getline(std::cin >> std::ws, s);
+
+        if (s.empty())
+            return def;
+
+        try {
+            size_t consumed = 0;
+            int value = std::stoi(s, &consumed);
+
+            if (consumed == s.size())
+                return value;
+        } catch (const std::exception&) {
+        }
+
+        std::cout << "Please enter a valid integer.\n";
+    }
 }
 
 std::string askString(const std::string& label)
