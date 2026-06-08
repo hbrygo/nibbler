@@ -120,13 +120,16 @@ static bool load_sdl3_symbols() {
 }
 
 SDL3Game::SDL3Game() : _window(nullptr), _renderer(nullptr), _width(0), _height(0),
-    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
-    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr), _michaelModeTexture(nullptr) {
+    _snakeUpDownTexture(nullptr), _snakeUpDownTexture2(nullptr), _snakeLeftRightTexture(nullptr), _snakeLeftRightTexture2(nullptr),
+    _snakeTurnRightTexture(nullptr), _snakeTurnRightTexture2(nullptr), _snakeTurnLeftTexture(nullptr), _snakeTurnLeftTexture2(nullptr),
+    _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr), _michaelModeTexture(nullptr) {
 }
 
 SDL3Game::SDL3Game(const SDL3Game& other) : _window(other._window), _renderer(other._renderer), _width(other._width), _height(other._height),
-    _snakeUpDownTexture(other._snakeUpDownTexture), _snakeLeftRightTexture(other._snakeLeftRightTexture),
-    _snakeTurnRightTexture(other._snakeTurnRightTexture), _snakeTurnLeftTexture(other._snakeTurnLeftTexture),
+    _snakeUpDownTexture(other._snakeUpDownTexture), _snakeUpDownTexture2(other._snakeUpDownTexture2),
+    _snakeLeftRightTexture(other._snakeLeftRightTexture), _snakeLeftRightTexture2(other._snakeLeftRightTexture2),
+    _snakeTurnRightTexture(other._snakeTurnRightTexture), _snakeTurnRightTexture2(other._snakeTurnRightTexture2),
+    _snakeTurnLeftTexture(other._snakeTurnLeftTexture), _snakeTurnLeftTexture2(other._snakeTurnLeftTexture2),
     _foodTexture(other._foodTexture), _backgroundTexture(other._backgroundTexture), _wallTexture(other._wallTexture), _michaelModeTexture(other._michaelModeTexture) {
 }
 
@@ -137,9 +140,13 @@ SDL3Game& SDL3Game::operator=(const SDL3Game& other) {
         _width = other._width;
         _height = other._height;
         _snakeUpDownTexture = other._snakeUpDownTexture;
+        _snakeUpDownTexture2 = other._snakeUpDownTexture2;
         _snakeLeftRightTexture = other._snakeLeftRightTexture;
+        _snakeLeftRightTexture2 = other._snakeLeftRightTexture2;
         _snakeTurnRightTexture = other._snakeTurnRightTexture;
+        _snakeTurnRightTexture2 = other._snakeTurnRightTexture2;
         _snakeTurnLeftTexture = other._snakeTurnLeftTexture;
+        _snakeTurnLeftTexture2 = other._snakeTurnLeftTexture2;
         _foodTexture = other._foodTexture;
         _backgroundTexture = other._backgroundTexture;
         _wallTexture = other._wallTexture;
@@ -149,8 +156,9 @@ SDL3Game& SDL3Game::operator=(const SDL3Game& other) {
 }
 
 SDL3Game::SDL3Game(int w, int h, bool michaelMode) : _window(nullptr), _renderer(nullptr), _width(w), _height(h),
-    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
-    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr) {
+    _snakeUpDownTexture(nullptr), _snakeUpDownTexture2(nullptr), _snakeLeftRightTexture(nullptr), _snakeLeftRightTexture2(nullptr),
+    _snakeTurnRightTexture(nullptr), _snakeTurnRightTexture2(nullptr), _snakeTurnLeftTexture(nullptr), _snakeTurnLeftTexture2(nullptr),
+    _foodTexture(nullptr), _backgroundTexture(nullptr), _wallTexture(nullptr), _michaelModeTexture(nullptr) {
     
     if (!load_sdl3_symbols()) {
         return;
@@ -252,14 +260,42 @@ SDL3Game::SDL3Game(int w, int h, bool michaelMode) : _window(nullptr), _renderer
         if (_michaelModeTexture) SDL_SetTextureBlendMode_ptr(_michaelModeTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
     }
+
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake2_up_down.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeUpDownTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeUpDownTexture2) SDL_SetTextureBlendMode_ptr(_snakeUpDownTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    }
+
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake2_right_left.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeLeftRightTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeLeftRightTexture2) SDL_SetTextureBlendMode_ptr(_snakeLeftRightTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    }
+
+    surface = SDL_LoadBMP_ptr("textureSDL3/snake2_turn_left.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _snakeTurnLeftTexture2 = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_snakeTurnLeftTexture2) SDL_SetTextureBlendMode_ptr(_snakeTurnLeftTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    }
 }
 
 SDL3Game::~SDL3Game() {
     std::cerr << "[SDL3] Cleaning up resources..." << std::endl;
     if (_snakeUpDownTexture) SDL_DestroyTexture_ptr(_snakeUpDownTexture);
+    if (_snakeUpDownTexture2) SDL_DestroyTexture_ptr(_snakeUpDownTexture2);
     if (_snakeLeftRightTexture) SDL_DestroyTexture_ptr(_snakeLeftRightTexture);
+    if (_snakeLeftRightTexture2) SDL_DestroyTexture_ptr(_snakeLeftRightTexture2);
     if (_snakeTurnRightTexture) SDL_DestroyTexture_ptr(_snakeTurnRightTexture);
+    if (_snakeTurnRightTexture2) SDL_DestroyTexture_ptr(_snakeTurnRightTexture2);
     if (_snakeTurnLeftTexture) SDL_DestroyTexture_ptr(_snakeTurnLeftTexture);
+    if (_snakeTurnLeftTexture2) SDL_DestroyTexture_ptr(_snakeTurnLeftTexture2);
     if (_foodTexture) SDL_DestroyTexture_ptr(_foodTexture);
     if (_backgroundTexture) SDL_DestroyTexture_ptr(_backgroundTexture);
     if (_wallTexture) SDL_DestroyTexture_ptr(_wallTexture);
@@ -358,6 +394,95 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
     }
 }
 
+void SDL3Game::display_good_part2(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael) {
+    const float michaelOffsetX = modeMichael ? 640.0f : 0.0f;
+    const float michaelOffsetY = modeMichael ? 350.0f : 0.0f;
+
+    auto renderRotated = [&](SDL_Texture* texture, double angle) {
+        SDL_FPoint center = { rect.w / 2.0f, rect.h / 2.0f };
+        SDL_RenderTextureRotated_ptr(_renderer, texture, nullptr, &rect, angle, &center, 0);
+    };
+
+    for (size_t i = 0; i < snakeBody.size(); ++i) {
+        rect.x = static_cast<float>(snakeBody[i].first * 32) + michaelOffsetX;
+        rect.y = static_cast<float>(snakeBody[i].second * 32) + michaelOffsetY;
+
+        auto segmentAngleFromDelta = [](int dx, int dy) -> double {
+            if (dx == 1) return 0.0;
+            if (dx == -1) return 180.0;
+            if (dy == 1) return 90.0;
+            if (dy == -1) return 270.0;
+            return 0.0;
+        };
+
+        // HEAD
+        if (i == 0) {
+            double angle = 0.0;
+            if (currentDirection == LEFT) {
+                angle = 180.0;
+            } else if (currentDirection == UP) {
+                angle = 270.0;
+            } else if (currentDirection == DOWN) {
+                angle = 90.0;
+            }
+            renderRotated(_snakeLeftRightTexture2, angle);
+        }
+
+        // TAIL (optionnel à compléter)
+        else if (i == snakeBody.size() - 1) {
+            auto prev = snakeBody[i - 1];
+            auto tail = snakeBody[i];
+            int dx = tail.first - prev.first;
+            int dy = tail.second - prev.second;
+            renderRotated(_snakeLeftRightTexture2, segmentAngleFromDelta(dx, dy));
+        }
+
+        // BODY
+        else {
+            auto prev = snakeBody[i - 1];
+            auto curr = snakeBody[i];
+            auto next = snakeBody[i + 1];
+
+            int dx1 = prev.first - curr.first;
+            int dy1 = prev.second - curr.second;
+
+            int dx2 = next.first - curr.first;
+            int dy2 = next.second - curr.second;
+
+            // STRAIGHT
+            if ((dx1 == dx2) || (dy1 == dy2)) {
+                if (dx1 != 0)
+                    renderRotated(_snakeLeftRightTexture2, 0);
+                else
+                    renderRotated(_snakeUpDownTexture2, 0);
+            }
+
+            // TURN
+            else {
+                double angle = 0;
+
+                // Haut + droite
+                if ((dy1 == -1 && dx2 == 1) || (dx1 == 1 && dy2 == -1))
+                    angle = 90;
+
+                // Droite + bas
+                else if ((dx1 == 1 && dy2 == 1) || (dy1 == 1 && dx2 == 1))
+                    angle = 180;
+
+                // Bas + gauche
+                else if ((dy1 == 1 && dx2 == -1) || (dx1 == -1 && dy2 == 1))
+                    angle = 270;
+
+                // Gauche + haut
+                else if ((dx1 == -1 && dy2 == -1) || (dy1 == -1 && dx2 == -1))
+                    angle = 0;
+
+                renderRotated(_snakeTurnLeftTexture2, angle);
+            }
+        }
+    }
+}
+
 void SDL3Game::display(const Game& game) {
     const float michaelOffsetX = game.getMichaelMode() ? 640.0f : 0.0f;
     const float michaelOffsetY = game.getMichaelMode() ? 350.0f : 0.0f;
@@ -421,7 +546,7 @@ void SDL3Game::display(const Game& game) {
         SDL_FRect snakeRect = { 0.0f, 0.0f, 32.0f, 32.0f };
         display_good_part(snakeRect, game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode());
         if (game.getNbPlayer() >= 2) {
-            display_good_part(snakeRect, game.getCurrentDirection2(), game.getSnakeBody2(), game.getMichaelMode());
+            display_good_part2(snakeRect, game.getCurrentDirection2(), game.getSnakeBody2(), game.getMichaelMode());
         }
     }
 
