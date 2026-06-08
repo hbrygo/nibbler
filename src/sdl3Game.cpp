@@ -263,9 +263,9 @@ SDL3Game::~SDL3Game() {
     if (_foodTexture) SDL_DestroyTexture_ptr(_foodTexture);
     if (_backgroundTexture) SDL_DestroyTexture_ptr(_backgroundTexture);
     if (_wallTexture) SDL_DestroyTexture_ptr(_wallTexture);
+    if (_michaelModeTexture) SDL_DestroyTexture_ptr(_michaelModeTexture);
     if (_renderer) SDL_DestroyRenderer_ptr(_renderer);
     if (_window) SDL_DestroyWindow_ptr(_window);
-    if (_michaelModeTexture) SDL_DestroyTexture_ptr(_michaelModeTexture);
     SDL_Quit_ptr();
     std::cerr << "[SDL3] Resources cleaned up and SDL_Quit called" << std::endl;
 }
