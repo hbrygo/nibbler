@@ -61,7 +61,6 @@ static bool load_sfml_symbols() {
     }
 
     initialized = true;
-    std::cerr << "[SFML] SFML wrapper symbols loaded successfully" << std::endl;
     return true;
 }
 
@@ -115,8 +114,6 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
     _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
     _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
     _snakeHeadTurnLeftTexture(nullptr), _snakeHeadTurnRightTexture(nullptr), _snakeTailTexture(nullptr), _michaelModeTexture(nullptr), _lastMoveTime(), _lastMoveTime2(), _prevSnakeBody(), _prevSnakeBody2() {
-    std::cerr << "[SFML] Initializing SFML Game..." << std::endl;
-
     if (!load_sfml_symbols()) {
         return;
     }
@@ -141,8 +138,6 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
         _window = nullptr;
         return;
     }
-
-    std::cerr << "[SFML] Window created successfully" << std::endl;
 
     _snakeUpDownTexture = SFML_LoadTexture_ptr("textureSFML/snake_up_down.png");
     if (!_snakeUpDownTexture) {
@@ -209,11 +204,9 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
         std::cerr << "[SFML] Error: Unable to load projet_michael_youn.png" << std::endl;
     }
 
-    std::cerr << "[SFML] BMP textures loaded successfully" << std::endl;
 }
 
 SFMLGame::~SFMLGame() {
-    std::cerr << "[SFML] Cleaning up resources..." << std::endl;
     if (_window) {
         SFML_WindowClose_ptr(_window);
         SFML_DestroyRenderWindow_ptr(_window);
@@ -231,7 +224,6 @@ SFMLGame::~SFMLGame() {
     if (_snakeHeadTurnRightTexture) SFML_DestroyTexture_ptr(_snakeHeadTurnRightTexture);
     if (_snakeTailTexture) SFML_DestroyTexture_ptr(_snakeTailTexture);
     if (_michaelModeTexture) SFML_DestroyTexture_ptr(_michaelModeTexture);
-    std::cerr << "[SFML] SFML Game destroyed" << std::endl;
 }
 
 int getDir(int currentDirection, char axe) {
@@ -519,8 +511,6 @@ int SFMLGame::handleInput() {
         }
 
         if (event.type == sf::Event::KeyPressed) {
-            std::cerr << "[SFML] KEY_PRESSED - code: " << event.key.code << std::endl;
-
             if (event.key.code == sf::Keyboard::Escape) {
                 std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
                 return -1;
@@ -556,22 +546,18 @@ int SFMLGame::handleInput() {
             }
             // Mode controls (use values > 4 to avoid conflict with Direction enum)
             if (event.key.code == sf::Keyboard::Num1) {
-                std::cerr << "[INPUT] Mode 1" << std::endl;
                 currentLibrary = SDL3;
                 return 10;
             }
             if (event.key.code == sf::Keyboard::Num2) {
-                std::cerr << "[INPUT] Mode 2" << std::endl;
                 currentLibrary = SFML;
                 return 20;
             }
             if (event.key.code == sf::Keyboard::Num3) {
-                std::cerr << "[INPUT] Mode 3" << std::endl;
                 currentLibrary = GL;
                 return 30;
             }
             if (event.key.code == sf::Keyboard::P) {
-                std::cerr << "[INPUT] P detected -> returning 1000 (pause)" << std::endl;
                 return 1000;
             }
         }

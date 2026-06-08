@@ -618,6 +618,9 @@ GLGame::GLGame(int w, int h, bool michaelMode)
 
 GLGame::~GLGame() {
     std::cerr << "[GL] Cleaning up resources..." << std::endl;
+    if (_window && glfwMakeContextCurrent_ptr) {
+        glfwMakeContextCurrent_ptr(nullptr);
+    }
     if (_window && glfwDestroyWindow_ptr) {
         glfwDestroyWindow_ptr(_window);
         _window = nullptr;
