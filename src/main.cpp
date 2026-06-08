@@ -191,10 +191,6 @@ int main()
     int height = config.height;
     int nbPlayer = (mode == MODE_SOLO) ? 1 : 2;
 
-    int network_socket = -1;
-    int server_socket = -1;
-
-
     void* gui = nullptr;
     void* handle = nullptr;
 
@@ -288,7 +284,6 @@ int main()
 
     bool running = true;
     auto last_move = std::chrono::high_resolution_clock::now();
-    std::vector<uint8_t> network_buffer;
 
     while (running) {
         display_gui(gui, game);
@@ -339,7 +334,5 @@ int main()
         sound_thread.join();
     if (gui) destroy_gui(gui);
     if (handle) dlclose(handle);
-    if (network_socket >= 0) close(network_socket);
-    if (server_socket >= 0) close(server_socket);
     _exit(0);
 }
