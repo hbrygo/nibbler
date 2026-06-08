@@ -220,7 +220,7 @@ int main()
             handle = nullptr;
         }
 
-        handle = dlopen(lib, RTLD_LAZY);
+        handle = dlopen(lib, RTLD_LAZY | RTLD_NODELETE);
         if (!handle) return false;
 
         const char* suffix =
@@ -233,13 +233,15 @@ int main()
         input_gui = (input_t)dlsym(handle, (std::string("input_gui_") + suffix).c_str());
 
         if (!create_gui || !destroy_gui || !display_gui || !input_gui) {
-            dlclose(handle);
-            handle = nullptr;
+            if (handle) {
+                dlclose(handle);
+                handle = nullptr;
+            }
             return false;
         }
 
         gui = create_gui(width, height, michaelMode);
-        if (!gui) {
+        if (!gui && handle) {
             dlclose(handle);
             handle = nullptr;
             return false;
@@ -339,5 +341,5 @@ int main()
     if (handle) dlclose(handle);
     if (network_socket >= 0) close(network_socket);
     if (server_socket >= 0) close(server_socket);
-    return 0;
+    _exit(0);
 }

@@ -74,7 +74,7 @@ static bool initialized = false;
 static bool load_sdl3_symbols() {
     if (initialized) return true;
     
-    sdl_handle = dlopen("./sdl3/build/libSDL3.so", RTLD_NOW | RTLD_GLOBAL);
+    sdl_handle = dlopen("./sdl3/build/libSDL3.so", RTLD_NOW | RTLD_LOCAL);
     if (!sdl_handle) {
         std::cerr << "[SDL3] Error: Unable to load libSDL3 - " << dlerror() << std::endl;
         return false;
@@ -266,8 +266,7 @@ SDL3Game::~SDL3Game() {
     if (_michaelModeTexture) SDL_DestroyTexture_ptr(_michaelModeTexture);
     if (_renderer) SDL_DestroyRenderer_ptr(_renderer);
     if (_window) SDL_DestroyWindow_ptr(_window);
-    SDL_Quit_ptr();
-    std::cerr << "[SDL3] Resources cleaned up and SDL_Quit called" << std::endl;
+    std::cerr << "[SDL3] Resources cleaned up." << std::endl;
 }
 
 void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael) {
@@ -311,12 +310,6 @@ void SDL3Game::display_good_part(SDL_FRect rect, int currentDirection, const std
             int dx = tail.first - prev.first;
             int dy = tail.second - prev.second;
             renderRotated(_snakeLeftRightTexture, segmentAngleFromDelta(dx, dy));
-            std::cout << "Tail segment at (" << tail.first << ", " << tail.second << ") with delta (" << dx << ", " << dy << ")" << std::endl;
-            std::cout << "Tail segment angle: " << segmentAngleFromDelta(dx, dy) << " degrees" << std::endl;
-            std::cout << "Tail segment texture: " << (_snakeLeftRightTexture ? "Loaded" : "Not Loaded") << std::endl;
-            std::cerr << "previous Snake size: " << snakeBody.size() << " i " << i - 1 << " current position: (" << snakeBody[i - 1].first << ", " << snakeBody[i - 1].second << ")" << std::endl;
-            std::cerr << "prvious previous Snake size: " << snakeBody.size() << " i " << i - 2 << " current position: (" << snakeBody[i - 2].first << ", " << snakeBody[i - 2].second << ")" << std::endl;
-            std::cerr << "Snake size: " << snakeBody.size() << " i " << i << "current position: (" << snakeBody[i].first << ", " << snakeBody[i].second << ")" << std::endl;
         }
 
         // BODY
