@@ -38,7 +38,7 @@ LIB_SFML	= ${SFML_OUTPUT_NAME}
 CC      = cc
 CXX     = c++
 RM		= rm -rf
-CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC -fsanitize=address -g
+CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
 
 LDFLAGS = -ldl
 
