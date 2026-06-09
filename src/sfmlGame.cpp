@@ -64,12 +64,18 @@ static bool load_sfml_symbols() {
     return true;
 }
 
-SFMLGame::SFMLGame() : _window(nullptr), _width(0), _height(0), _michaelMode(false),
-    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
-    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
-    _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
-    _snakeHeadTurnLeftTexture(nullptr), _snakeHeadTurnRightTexture(nullptr),
-    _snakeTailTexture(nullptr), _michaelModeTexture(nullptr), _lastMoveTime(), _lastMoveTime2(), _prevSnakeBody(), _prevSnakeBody2() {
+SFMLGame::SFMLGame() : _window(nullptr), _width(800), _height(600), _michaelMode(0),
+    _snakeUpDownTexture(nullptr), _snake2UpDownTexture(nullptr),
+    _snakeLeftRightTexture(nullptr), _snake2LeftRightTexture(nullptr),
+    _snakeTurnRightTexture(nullptr), _snake2TurnRightTexture(nullptr),
+    _snakeTurnLeftTexture(nullptr), _snake2TurnLeftTexture(nullptr),
+    _foodTexture(nullptr), _backgroundTexture1(nullptr),
+    _backgroundTexture2(nullptr), _wallTexture(nullptr),
+    _snakeHeadTexture(nullptr), _snake2HeadTexture(nullptr),
+    _snakeHeadTurnLeftTexture(nullptr), _snake2HeadTurnLeftTexture(nullptr),
+    _snakeHeadTurnRightTexture(nullptr), _snake2HeadTurnRightTexture(nullptr),
+    _snakeTailTexture(nullptr), _snake2TailTexture(nullptr),
+    _michaelModeTexture(nullptr), _lastMoveTime(), _lastMoveTime2(), _prevSnakeBody(), _prevSnakeBody2() {
 }
 
 SFMLGame::SFMLGame(const SFMLGame& other) : _window(other._window), _width(other._width), _height(other._height), _michaelMode(other._michaelMode),
@@ -88,18 +94,24 @@ SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
         _width = other._width;
         _height = other._height;
         _michaelMode = other._michaelMode;
-         _snakeUpDownTexture = other._snakeUpDownTexture;
+        _snakeUpDownTexture = other._snakeUpDownTexture;
+        _snake2UpDownTexture = other._snake2UpDownTexture;
         _snakeLeftRightTexture = other._snakeLeftRightTexture;
+        _snake2LeftRightTexture = other._snake2LeftRightTexture;
         _snakeTurnRightTexture = other._snakeTurnRightTexture;
+        _snake2TurnRightTexture = other._snake2TurnRightTexture;
         _snakeTurnLeftTexture = other._snakeTurnLeftTexture;
+        _snake2TurnLeftTexture = other._snake2TurnLeftTexture;
         _foodTexture = other._foodTexture;
         _backgroundTexture1 = other._backgroundTexture1;
         _backgroundTexture2 = other._backgroundTexture2;
         _wallTexture = other._wallTexture;
         _snakeHeadTexture = other._snakeHeadTexture;
+        _snake2HeadTexture = other._snake2HeadTexture;
         _snakeHeadTurnLeftTexture = other._snakeHeadTurnLeftTexture;
         _snakeHeadTurnRightTexture = other._snakeHeadTurnRightTexture;
         _snakeTailTexture = other._snakeTailTexture;
+        _snake2TailTexture = other._snake2TailTexture;
         _michaelModeTexture = other._michaelModeTexture;
         _lastMoveTime = other._lastMoveTime;
         _lastMoveTime2 = other._lastMoveTime2;
@@ -110,10 +122,17 @@ SFMLGame& SFMLGame::operator=(const SFMLGame& other) {
 }
 
 SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w), _height(h), _michaelMode(michaelMode),
-    _snakeUpDownTexture(nullptr), _snakeLeftRightTexture(nullptr), _snakeTurnRightTexture(nullptr),
-    _snakeTurnLeftTexture(nullptr), _foodTexture(nullptr), _backgroundTexture1(nullptr),
-    _backgroundTexture2(nullptr), _wallTexture(nullptr), _snakeHeadTexture(nullptr),
-    _snakeHeadTurnLeftTexture(nullptr), _snakeHeadTurnRightTexture(nullptr), _snakeTailTexture(nullptr), _michaelModeTexture(nullptr), _lastMoveTime(), _lastMoveTime2(), _prevSnakeBody(), _prevSnakeBody2() {
+    _snakeUpDownTexture(nullptr), _snake2UpDownTexture(nullptr),
+    _snakeLeftRightTexture(nullptr), _snake2LeftRightTexture(nullptr),
+    _snakeTurnRightTexture(nullptr), _snake2TurnRightTexture(nullptr),
+    _snakeTurnLeftTexture(nullptr), _snake2TurnLeftTexture(nullptr),
+    _foodTexture(nullptr), _backgroundTexture1(nullptr),
+    _backgroundTexture2(nullptr), _wallTexture(nullptr),
+    _snakeHeadTexture(nullptr), _snake2HeadTexture(nullptr),
+    _snakeHeadTurnLeftTexture(nullptr), _snake2HeadTurnLeftTexture(nullptr),
+    _snakeHeadTurnRightTexture(nullptr), _snake2HeadTurnRightTexture(nullptr),
+    _snakeTailTexture(nullptr), _snake2TailTexture(nullptr),
+    _michaelModeTexture(nullptr), _lastMoveTime(), _lastMoveTime2(), _prevSnakeBody(), _prevSnakeBody2() {
     if (!load_sfml_symbols()) {
         return;
     }
@@ -199,11 +218,50 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
         std::cerr << "[SFML] Error: Unable to load snake_tail_up.png" << std::endl;
     }
 
+    _snake2HeadTexture = SFML_LoadTexture_ptr("textureSFML/player_2_head_up.png");
+    if (!_snake2HeadTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_head_up.png" << std::endl;
+    }
+
+    _snake2HeadTurnLeftTexture = SFML_LoadTexture_ptr("textureSFML/player_2_head_turn_left.png");
+    if (!_snake2HeadTurnLeftTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_head_turn_left.png" << std::endl;
+    }
+
+    _snake2HeadTurnRightTexture = SFML_LoadTexture_ptr("textureSFML/player_2_head_turn_right.png");
+    if (!_snake2HeadTurnRightTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_head_turn_right.png" << std::endl;
+    }
+
+    _snake2TailTexture = SFML_LoadTexture_ptr("textureSFML/player_2_tail_up.png");
+    if (!_snake2TailTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_tail_up.png" << std::endl;
+    }
+
+    _snake2UpDownTexture = SFML_LoadTexture_ptr("textureSFML/player_2_up_down.png");
+    if (!_snake2UpDownTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_up_down.png" << std::endl;
+    }
+
+    _snake2LeftRightTexture = SFML_LoadTexture_ptr("textureSFML/player_2_body_left.png");
+    if (!_snake2LeftRightTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_body_left.png" << std::endl;
+    }
+
+    _snake2TurnRightTexture = SFML_LoadTexture_ptr("textureSFML/player_2_turn_right.png");
+    if (!_snake2TurnRightTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_turn_right.png" << std::endl;
+    }
+
+    _snake2TurnLeftTexture = SFML_LoadTexture_ptr("textureSFML/player_2_turn_left.png");
+    if (!_snake2TurnLeftTexture) {
+        std::cerr << "[SFML] Error: Unable to load player_2_turn_left.png" << std::endl;
+    }
+
     _michaelModeTexture = SFML_LoadTexture_ptr("textureSFML/projet_michael_youn.png");
     if (!_michaelModeTexture) {
         std::cerr << "[SFML] Error: Unable to load projet_michael_youn.png" << std::endl;
     }
-
 }
 
 SFMLGame::~SFMLGame() {
@@ -223,6 +281,14 @@ SFMLGame::~SFMLGame() {
     if (_snakeHeadTurnLeftTexture) SFML_DestroyTexture_ptr(_snakeHeadTurnLeftTexture);
     if (_snakeHeadTurnRightTexture) SFML_DestroyTexture_ptr(_snakeHeadTurnRightTexture);
     if (_snakeTailTexture) SFML_DestroyTexture_ptr(_snakeTailTexture);
+    if (_snake2HeadTexture) SFML_DestroyTexture_ptr(_snake2HeadTexture);
+    if (_snake2HeadTurnLeftTexture) SFML_DestroyTexture_ptr(_snake2HeadTurnLeftTexture);
+    if (_snake2HeadTurnRightTexture) SFML_DestroyTexture_ptr(_snake2HeadTurnRightTexture);
+    if (_snake2TailTexture) SFML_DestroyTexture_ptr(_snake2TailTexture);
+    if (_snake2UpDownTexture) SFML_DestroyTexture_ptr(_snake2UpDownTexture);
+    if (_snake2LeftRightTexture) SFML_DestroyTexture_ptr(_snake2LeftRightTexture);
+    if (_snake2TurnRightTexture) SFML_DestroyTexture_ptr(_snake2TurnRightTexture);
+    if (_snake2TurnLeftTexture) SFML_DestroyTexture_ptr(_snake2TurnLeftTexture);
     if (_michaelModeTexture) SFML_DestroyTexture_ptr(_michaelModeTexture);
 }
 
@@ -430,6 +496,197 @@ void SFMLGame::display_good_part(int currentDirection, const std::vector<std::pa
     }
 }
 
+void SFMLGame::display_good_part2(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael,
+    std::chrono::high_resolution_clock::time_point& lastMoveTime,
+    std::vector<std::pair<int, int>>& prevSnakeBody) {
+    const float offsetX = modeMichael ? 640.0f : 0.0f;
+    const float offsetY = modeMichael ? 350.0f : 0.0f;
+
+    if (prevSnakeBody.empty()) {
+        prevSnakeBody = snakeBody;
+        lastMoveTime = std::chrono::high_resolution_clock::now();
+    }
+
+    auto now = std::chrono::high_resolution_clock::now();
+    if (prevSnakeBody != snakeBody) {
+        lastMoveTime = now;
+        prevSnakeBody = snakeBody;
+    }
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastMoveTime).count();
+    float progress = std::min(1.0f, elapsed / 150.0f);
+
+    auto segmentAngleFromDelta = [](int dx, int dy) -> float {
+        if (dx == 1) return 90.0f;
+        if (dx == -1) return 270.0f;
+        if (dy == 1) return 180.0f;
+        if (dy == -1) return 0.0f;
+        return 0.0f;
+    };
+
+    auto directionAngle = [](int direction) -> float {
+        if (direction == RIGHT) return 90.0f;
+        if (direction == DOWN) return 180.0f;
+        if (direction == LEFT) return 270.0f;
+        return 0.0f;
+    };
+
+    for (size_t i = 0; i < snakeBody.size(); ++i) {
+        float centerX = 0.0f;
+        float centerY = 0.0f;
+
+        if (i < prevSnakeBody.size()) {
+            float oldX = (prevSnakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            float oldY = (prevSnakeBody[i].second * 32.0f + 16.0f) + offsetY;
+            float newX = (snakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            float newY = (snakeBody[i].second * 32.0f + 16.0f) + offsetY;
+            centerX = oldX + (newX - oldX) * progress;
+            centerY = oldY + (newY - oldY) * progress;
+        } else {
+            centerX = (snakeBody[i].first * 32.0f + 16.0f) + offsetX;
+            centerY = (snakeBody[i].second * 32.0f + 16.0f) + offsetY;
+        }
+
+        if (i == 0) {
+            int fromX = snakeBody[1].first - snakeBody[0].first;
+            int fromY = snakeBody[1].second - snakeBody[0].second;
+
+            sf::Sprite headSprite(*_snake2HeadTexture);
+            headSprite.setPosition(centerX, centerY);
+            headSprite.setOrigin(
+                16.0f + (0.25f * getDir(currentDirection, 'x')),
+                16.0f + (0.25f * getDir(currentDirection, 'y'))
+            );
+
+            if ((currentDirection == UP    && fromY == 1)  ||
+                (currentDirection == DOWN  && fromY == -1) ||
+                (currentDirection == LEFT  && fromX == 1)  ||
+                (currentDirection == RIGHT && fromX == -1))
+            {
+                headSprite.setRotation(directionAngle(currentDirection));
+                SFML_WindowDrawSprite_ptr(_window, &headSprite);
+            }
+
+            else if (currentDirection == UP && fromX == -1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(0.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == UP && fromX == 1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(0.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == DOWN && fromX == -1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(180.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == DOWN && fromX == 1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(180.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == LEFT && fromY == -1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(270.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == LEFT && fromY == 1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(270.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == RIGHT && fromY == -1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnLeftTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(90.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+
+            else if (currentDirection == RIGHT && fromY == 1)
+            {
+                sf::Sprite turn(*_snake2HeadTurnRightTexture);
+                turn.setPosition(centerX, centerY);
+                turn.setOrigin(16.0f, 16.0f);
+                turn.setRotation(90.0f);
+                SFML_WindowDrawSprite_ptr(_window, &turn);
+            }
+        } else if (i == snakeBody.size() - 1) {
+            auto prev = snakeBody[i - 1];
+            auto tail = snakeBody[i];
+            int dx = tail.first - prev.first;
+            int dy = tail.second - prev.second;
+
+            sf::Sprite tailSprite(*_snake2TailTexture);
+            tailSprite.setPosition(centerX, centerY);
+            tailSprite.setOrigin(16.0f, 16.0f);
+            tailSprite.setRotation(segmentAngleFromDelta(-dx, -dy));
+            SFML_WindowDrawSprite_ptr(_window, &tailSprite);
+        } else {
+            auto prev = snakeBody[i - 1];
+            auto curr = snakeBody[i];
+            auto next = snakeBody[i + 1];
+
+            int dx1 = curr.first - prev.first;
+            int dy1 = curr.second - prev.second;
+            int dx2 = next.first - curr.first;
+            int dy2 = next.second - curr.second;
+
+            if ((dx1 == 0 && dx2 == 0) || (dy1 == 0 && dy2 == 0)) {
+                sf::Sprite bodySprite(*_snake2UpDownTexture);
+                bodySprite.setPosition(centerX, centerY);
+                bodySprite.setOrigin(16.0f, 16.0f);
+                bodySprite.setRotation(segmentAngleFromDelta(-dx1, -dy1));
+                SFML_WindowDrawSprite_ptr(_window, &bodySprite);
+            } else {
+                float angle = 0.0f;
+
+                if (dx1 == 0 && dy1 == -1 && dx2 == -1 && dy2 == 0) angle = 270.0f;
+                else if (dx1 == -1 && dy1 == 0 && dx2 == 0 && dy2 == 1) angle = 180.0f;
+                else if (dx1 == 0 && dy1 == 1 && dx2 == 1 && dy2 == 0) angle = 90.0f;
+                else if (dx1 == 1 && dy1 == 0 && dx2 == 0 && dy2 == -1) angle = 0.0f;
+                else if (dx2 == 0 && dy2 == -1 && dx1 == -1 && dy1 == 0) angle = 90.0f;
+                else if (dx2 == -1 && dy2 == 0 && dx1 == 0 && dy1 == 1) angle = 0.0f;
+                else if (dx2 == 1 && dy2 == 0 && dx1 == 0 && dy1 == -1) angle = 180.0f;
+                else if (dx2 == 0 && dy2 == 1 && dx1 == 1 && dy1 == 0) angle = 270.0f;
+
+                sf::Sprite turnSprite(*_snake2TurnLeftTexture);
+                turnSprite.setPosition(centerX, centerY);
+                turnSprite.setOrigin(16.0f, 16.0f);
+                turnSprite.setRotation(angle);
+                SFML_WindowDrawSprite_ptr(_window, &turnSprite);
+            }
+        }
+    }
+}
+
 void SFMLGame::display(const Game& game) {
     const float offsetX = game.getMichaelMode() ? 640.0f : 0.0f;
     const float offsetY = game.getMichaelMode() ? 350.0f : 0.0f;
@@ -491,8 +748,11 @@ void SFMLGame::display(const Game& game) {
 
     if (_snakeUpDownTexture && _snakeLeftRightTexture && _snakeTurnRightTexture && _snakeTurnLeftTexture) {
         display_good_part(game.getCurrentDirection(), game.getSnakeBody(), game.getMichaelMode(), _lastMoveTime, _prevSnakeBody);
-        if (game.getNbPlayer() >= 2) {
-            display_good_part(game.getCurrentDirection2(), game.getSnakeBody2(), game.getMichaelMode(), _lastMoveTime2, _prevSnakeBody2);
+        if (game.getNbPlayer() >= 2 &&
+            _snake2UpDownTexture && _snake2LeftRightTexture &&
+            _snake2TurnRightTexture && _snake2TurnLeftTexture &&
+            _snake2HeadTexture && _snake2TailTexture) {
+            display_good_part2(game.getCurrentDirection2(), game.getSnakeBody2(), game.getMichaelMode(), _lastMoveTime2, _prevSnakeBody2);
         }
     }
     SFML_WindowDisplay_ptr(_window);

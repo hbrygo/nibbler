@@ -58,9 +58,13 @@ class SDL3Game {
         SDL_Renderer* _renderer;
         int _width, _height;
         SDL_Texture* _snakeUpDownTexture;
+        SDL_Texture* _snakeUpDownTexture2;
         SDL_Texture* _snakeLeftRightTexture;
+        SDL_Texture* _snakeLeftRightTexture2;
         SDL_Texture* _snakeTurnRightTexture;
+        SDL_Texture* _snakeTurnRightTexture2;
         SDL_Texture* _snakeTurnLeftTexture;
+        SDL_Texture* _snakeTurnLeftTexture2;
         SDL_Texture* _foodTexture;
         SDL_Texture* _backgroundTexture;
         SDL_Texture* _wallTexture;
@@ -74,6 +78,7 @@ class SDL3Game {
         SDL3Game& operator=(const SDL3Game&);
         void display(const Game& game);
         void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
+        void display_good_part2(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
         int handleInput();
 };
 
