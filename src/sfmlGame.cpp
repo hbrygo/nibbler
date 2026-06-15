@@ -802,6 +802,8 @@ int SFMLGame::handleInput() {
                     return 30;
                 case sf::Keyboard::P:
                     return 1000;
+                default:
+                    break;
             }
         }
     }
