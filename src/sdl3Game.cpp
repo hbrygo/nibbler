@@ -17,6 +17,7 @@
 #define SDL_SCANCODE_D 0x07
 #define SDL_SCANCODE_S 0x16
 #define SDL_SCANCODE_W 0x1A
+#define SDL_SCANCODE_P 0x19
 #define SDL_SCANCODE_ESCAPE 0x29
 #define SDL_SCANCODE_1 0x1E
 #define SDL_SCANCODE_2 0x1F
@@ -572,46 +573,34 @@ int SDL3Game::handleInput() {
                 return 1000;                
             }
             std::cout << "[SDL3] Key down event: scancode=" << scancode << std::endl;
-            if (scancode == SDL_SCANCODE_ESCAPE) {
-                return -1;
-            }
-            // Arrow keys
-            if (scancode == SDL_SCANCODE_LEFT) {
-                return LEFT;
-            }
-            if (scancode == SDL_SCANCODE_RIGHT) {
-                return RIGHT;
-            }
-            if (scancode == SDL_SCANCODE_UP) {
-                return UP;
-            }
-            if (scancode == SDL_SCANCODE_DOWN) {
-                return DOWN;
-            }
-            if (scancode == SDL_SCANCODE_W) {
-                return P2_UP;
-            }
-            if (scancode == SDL_SCANCODE_S) {
-                return P2_DOWN;
-            }
-            if (scancode == SDL_SCANCODE_A) {
-                return P2_LEFT;
-            }
-            if (scancode == SDL_SCANCODE_D) {
-                return P2_RIGHT;
-            }
-            // Mode controls (use values > 4 to avoid conflict with Direction enum)
-            if (scancode == SDL_SCANCODE_1) {
-                currentLibrary = SDL3;
-                return 10;  // Increased to avoid UP (1), DOWN (2), etc.
-            }
-            if (scancode == SDL_SCANCODE_2) {
-                currentLibrary = SFML;
-                return 20;
-            }
-            if (scancode == SDL_SCANCODE_3) {
-                currentLibrary = GL;
-                return 30;
+            switch (scancode) {
+                case SDL_SCANCODE_1:
+                    currentLibrary = SDL3;
+                    return 10;
+                case SDL_SCANCODE_2:
+                    currentLibrary = SFML;
+                    return 20;
+                case SDL_SCANCODE_3:
+                    currentLibrary = GL;
+                    return 30;
+                case SDL_SCANCODE_P:
+                    return 1000;
+                case SDL_SCANCODE_A:
+                    return P2_LEFT;
+                case SDL_SCANCODE_D:
+                    return P2_RIGHT;
+                case SDL_SCANCODE_W:
+                    return P2_UP;
+                case SDL_SCANCODE_S:
+                    return P2_DOWN;
+                case SDL_SCANCODE_DOWN:
+                    return DOWN;
+                case SDL_SCANCODE_LEFT:
+                    return LEFT;
+                case SDL_SCANCODE_RIGHT:
+                    return RIGHT;
+                case SDL_SCANCODE_UP:
+                    return UP;
             }
         }
     }

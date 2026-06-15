@@ -771,54 +771,37 @@ int SFMLGame::handleInput() {
         }
 
         if (event.type == sf::Event::KeyPressed) {
-            if (event.key.code == sf::Keyboard::Escape) {
-                std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
-                return -1;
-            }
-            // Arrow keys
-            if (event.key.code == sf::Keyboard::Left) {
-                std::cerr << "[INPUT] LEFT detected -> returning " << LEFT << std::endl;
-                return LEFT;
-            }
-            if (event.key.code == sf::Keyboard::Right) {
-                std::cerr << "[INPUT] RIGHT detected -> returning " << RIGHT << std::endl;
-                return RIGHT;
-            }
-            if (event.key.code == sf::Keyboard::Up) {
-                std::cerr << "[INPUT] UP detected -> returning " << UP << std::endl;
-                return UP;
-            }
-            if (event.key.code == sf::Keyboard::Down) {
-                std::cerr << "[INPUT] DOWN detected -> returning " << DOWN << std::endl;
-                return DOWN;
-            }
-            if (event.key.code == sf::Keyboard::W) {
-                return P2_UP;
-            }
-            if (event.key.code == sf::Keyboard::S) {
-                return P2_DOWN;
-            }
-            if (event.key.code == sf::Keyboard::A) {
-                return P2_LEFT;
-            }
-            if (event.key.code == sf::Keyboard::D) {
-                return P2_RIGHT;
-            }
-            // Mode controls (use values > 4 to avoid conflict with Direction enum)
-            if (event.key.code == sf::Keyboard::Num1) {
-                currentLibrary = SDL3;
-                return 10;
-            }
-            if (event.key.code == sf::Keyboard::Num2) {
-                currentLibrary = SFML;
-                return 20;
-            }
-            if (event.key.code == sf::Keyboard::Num3) {
-                currentLibrary = GL;
-                return 30;
-            }
-            if (event.key.code == sf::Keyboard::P) {
-                return 1000;
+            switch (event.key.code) {
+                case sf::Keyboard::W:
+                    return P2_UP;
+                case sf::Keyboard::S:
+                    return P2_DOWN;
+                case sf::Keyboard::A:
+                    return P2_LEFT;
+                case sf::Keyboard::D:
+                    return P2_RIGHT;
+                case sf::Keyboard::Up:
+                    return UP;
+                case sf::Keyboard::Down:
+                    return DOWN;
+                case sf::Keyboard::Left:
+                    return LEFT;
+                case sf::Keyboard::Right:
+                    return RIGHT;
+                case sf::Keyboard::Escape:
+                    std::cerr << "[INPUT] ESCAPE detected -> returning -1" << std::endl;
+                    return -1;
+                case sf::Keyboard::Num1:
+                    currentLibrary = SDL3;
+                    return 10;
+                case sf::Keyboard::Num2:
+                    currentLibrary = SFML;
+                    return 20;
+                case sf::Keyboard::Num3:
+                    currentLibrary = GL;
+                    return 30;
+                case sf::Keyboard::P:
+                    return 1000;
             }
         }
     }

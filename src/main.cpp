@@ -289,29 +289,62 @@ int main()
         display_gui(gui, game);
         int input = input_gui(gui);
 
-        if (input == -1) running = false;
-        else if (input == 10 && !load_lib(lib_path(SDL3), SDL3)) running = false;
-        else if (input == 20 && !load_lib(lib_path(SFML), SFML)) running = false;
-        else if (!michaelMode && input == 30 && !load_lib(lib_path(GL), GL)) running = false;
-        else if (input == UP) game.changeDirection(UP);
-        else if (input == DOWN) game.changeDirection(DOWN);
-        else if (input == LEFT) game.changeDirection(LEFT);
-        else if (input == RIGHT) game.changeDirection(RIGHT);
-        else if (mode == MODE_LOCAL && input == P2_UP) game.changeDirection2(UP);
-        else if (mode == MODE_LOCAL && input == P2_DOWN) game.changeDirection2(DOWN);
-        else if (mode == MODE_LOCAL && input == P2_LEFT) game.changeDirection2(LEFT);
-        else if (mode == MODE_LOCAL && input == P2_RIGHT) game.changeDirection2(RIGHT);
-        else if (input == 1000) {
-            std::cout << "Pausing game. Press P to resume." << std::endl;
-            while (true) {
-                int pauseInput = input_gui(gui);
-                if (pauseInput == 1000) {
-                    std::cout << "Resuming game." << std::endl;
-                    break;
+        switch (input) {
+            case 10:
+                std::cout << "Switching to SDL3..." << std::endl;
+                if (!load_lib(lib_path(SDL3), SDL3)) running = false;
+                break;
+            case 20:
+                std::cout << "Switching to SFML..." << std::endl;
+                if (!load_lib(lib_path(SFML), SFML)) running = false;
+                break;
+            case 30:
+                if (!michaelMode) {
+                    std::cout << "Switching to GL..." << std::endl;
+                    if (!load_lib(lib_path(GL), GL)) running = false;
                 }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                break;
+            case 1000:
+                std::cout << "Pausing game. Press P to resume." << std::endl;
+                while (true) {
+                    int pauseInput = input_gui(gui);
+                    if (pauseInput == 1000) {
+                        std::cout << "Resuming game." << std::endl;
+                        break;
+                    }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                break;
+            case UP:
+                game.changeDirection(UP);
+                break;
+            case DOWN:
+                game.changeDirection(DOWN);
+                break;
+            case LEFT:
+                game.changeDirection(LEFT);
+                break;
+            case RIGHT:
+                game.changeDirection(RIGHT);
+                break;
+        }
+        if (mode == MODE_LOCAL) {
+            switch (input) {
+                case P2_UP:
+                    game.changeDirection2(UP);
+                    break;
+                case P2_DOWN:
+                    game.changeDirection2(DOWN);
+                    break;
+                case P2_LEFT:
+                    game.changeDirection2(LEFT);
+                    break;
+                case P2_RIGHT:
+                    game.changeDirection2(RIGHT);
+                    break;
             }
         }
+        if (input == -1) running = false;
 
         auto now = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
