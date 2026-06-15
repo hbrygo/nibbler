@@ -327,6 +327,8 @@ int main()
             case RIGHT:
                 game.changeDirection(RIGHT);
                 break;
+            default:
+                break;
         }
         if (mode == MODE_LOCAL) {
             switch (input) {
@@ -341,6 +343,8 @@ int main()
                     break;
                 case P2_RIGHT:
                     game.changeDirection2(RIGHT);
+                    break;
+                default:
                     break;
             }
         }
