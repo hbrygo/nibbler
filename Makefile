@@ -45,6 +45,16 @@ LDFLAGS = -ldl
 %.o: %.cpp
 	${CXX} ${CXXFLAGS} -c $< -o $@ -I ${INCS} -I ${GLFW_INC} -I ${GLM_INC} -I ${CAM_INC} -I ${AUDIO_INC} -I ${SFML_INC}
 
+miniaudio_build:
+	@if [ ! -d miniaudio ]; then \
+		echo "Téléchargement de miniaudio..."; \
+		git clone https://github.com/mackron/miniaudio.git; \
+	fi
+	@set -e; \
+	cmake -S miniaudio -B miniaudio/build -DMINIAUDIO_BUILD_EXAMPLES=OFF -DMINIAUDIO_BUILD_TESTS=OFF -DMINIAUDIO_INSTALL=OFF; \
+	cmake --build miniaudio/build --target miniaudio -j4; \
+	cp -f miniaudio/build/libminiaudio.a miniaudio/libminiaudio_all.a
+
 sdl3_build:
 	@if [ ! -d sdl3 ]; then \
 		echo "Téléchargement de SDL3 3.4.4..."; \
@@ -92,7 +102,7 @@ sfml_build:
 	mkdir -p sfml-2.5.1/build; \
 	cd sfml-2.5.1/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSFML_BUILD_GRAPHICS=ON -DSFML_BUILD_WINDOW=ON -DSFML_BUILD_NETWORK=OFF -DSFML_BUILD_AUDIO=OFF -DSFML_BUILD_EXAMPLES=OFF && make -j4 && cd ../..;
 
-${NAME}: sdl3_build glfw_build sfml_build ${OBJS_MAIN} miniaudio/libminiaudio_all.a
+${NAME}: miniaudio_build sdl3_build glfw_build sfml_build ${OBJS_MAIN} miniaudio/libminiaudio_all.a
 	${CXX} ${OBJS_MAIN} miniaudio/libminiaudio_all.a ${CXXFLAGS} ${LDFLAGS} -rdynamic -no-pie -o ${NAME}
 
 ${LIB_SDL3}: sdl3_build ${OBJS_SDL3}
@@ -128,7 +138,8 @@ fclean: clean
 	${RM} sdl3
 	${RM} glfw-3.4
 	${RM} sfml-2.5.1
+	${RM} miniaudio
 
 re: fclean all
 
-.PHONY: all clean fclean re sdl3_build glfw_build sfml_build install_sfml
+.PHONY: all clean fclean re sdl3_build glfw_build sfml_build install_sfml miniaudio_build

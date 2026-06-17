@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -27,6 +28,57 @@ typedef void* (*create_t)(int, int, bool);
 typedef void (*destroy_t)(void*);
 typedef void (*display_t)(void*, const Game&);
 typedef int (*input_t)(void*);
+
+class DynamicDisplay : public INibblerDisplay {
+public:
+    DynamicDisplay(void* instance, create_t createFn, destroy_t destroyFn, display_t displayFn, input_t inputFn,
+        int width, int height, bool michaelMode)
+        : _instance(instance), _createFn(createFn), _destroyFn(destroyFn), _displayFn(displayFn), _inputFn(inputFn),
+          _width(width), _height(height), _michaelMode(michaelMode) {}
+
+    ~DynamicDisplay() override {
+        stop();
+    }
+
+    bool init(int width, int height, bool michaelMode) override {
+        _width = width;
+        _height = height;
+        _michaelMode = michaelMode;
+        return _instance != nullptr;
+    }
+
+    int getEvents() override {
+        return _instance ? _inputFn(_instance) : -1;
+    }
+
+    void updateGameData(const Game& game) override {
+        _game = game;
+    }
+
+    void refreshDisplay() override {
+        if (_instance) {
+            _displayFn(_instance, _game);
+        }
+    }
+
+    void stop() override {
+        if (_instance) {
+            _destroyFn(_instance);
+            _instance = nullptr;
+        }
+    }
+
+private:
+    void* _instance;
+    create_t _createFn;
+    destroy_t _destroyFn;
+    display_t _displayFn;
+    input_t _inputFn;
+    int _width;
+    int _height;
+    bool _michaelMode;
+    Game _game;
+};
 
 enum AppMode {
     MODE_SOLO,
@@ -112,7 +164,7 @@ std::string askString(const std::string& label)
     return s;
 }
 
-GameConfig runMenu()
+GameConfig runMenu(char **argv)
 {
     GameConfig c;
 
@@ -134,8 +186,10 @@ GameConfig runMenu()
 
     if (mainChoice == 2) {
         c.despawnApple = askChoice("Despawn Apple?", {"Yes", "No"}) == 1;
-        c.width = askInt("Width", 10);
-        c.height = askInt("Height", 10);
+        c.width = atoi(argv[1]);
+        if (c.width < 10) c.width = 10;
+        c.height = atoi(argv[2]);
+        if (c.height < 10) c.height = 10;
 
         int lib = askChoice("Library", {"sdl3", "sfml", "gl"});
         c.library = (lib == 1 ? "sdl3" : lib == 2 ? "sfml" : "gl");
@@ -155,14 +209,19 @@ GameConfig runMenu()
     return c;
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <width> <height>\n";
+        return 1;
+    }
+
     int onAppleSound = 0;
     std::mutex onAppleMutex;
     std::atomic<bool> soundRunning(true);
     std::thread sound_thread;
 
-    GameConfig config = runMenu();
+    GameConfig config = runMenu(argv);
 
     bool michaelMode = config.michaelMode;
     bool despawnApple = config.despawnApple;
@@ -191,7 +250,7 @@ int main()
     int height = config.height;
     int nbPlayer = (mode == MODE_SOLO) ? 1 : 2;
 
-    void* gui = nullptr;
+    std::unique_ptr<INibblerDisplay> gui;
     void* handle = nullptr;
 
     create_t create_gui = nullptr;
@@ -209,8 +268,8 @@ int main()
 
         if (handle) {
             if (gui) {
-                destroy_gui(gui);
-                gui = nullptr;
+                gui->stop();
+                gui.reset();
             }
             dlclose(handle);
             handle = nullptr;
@@ -236,8 +295,17 @@ int main()
             return false;
         }
 
-        gui = create_gui(width, height, michaelMode);
-        if (!gui && handle) {
+        void* instance = create_gui(width, height, michaelMode);
+        if (!instance && handle) {
+            dlclose(handle);
+            handle = nullptr;
+            return false;
+        }
+
+        gui = std::unique_ptr<INibblerDisplay>(new DynamicDisplay(instance, create_gui, destroy_gui, display_gui, input_gui, width, height, michaelMode));
+        if (!gui->init(width, height, michaelMode)) {
+            gui->stop();
+            gui.reset();
             dlclose(handle);
             handle = nullptr;
             return false;
@@ -268,7 +336,7 @@ int main()
 
             if (shouldPlay) {
                 std::cout << "Playing apple sound effect!" << std::endl;
-                if (ma_engine_play_sound(&engine, "miniaudio/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
+                if (ma_engine_play_sound(&engine, "mp3/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
                     std::cerr << "Failed to play sound" << std::endl;
                 }
             } else {
@@ -286,8 +354,9 @@ int main()
     auto last_move = std::chrono::high_resolution_clock::now();
 
     while (running) {
-        display_gui(gui, game);
-        int input = input_gui(gui);
+        gui->updateGameData(game);
+        gui->refreshDisplay();
+        int input = gui->getEvents();
 
         switch (input) {
             case 10:
@@ -307,7 +376,7 @@ int main()
             case 1000:
                 std::cout << "Pausing game. Press P to resume." << std::endl;
                 while (true) {
-                    int pauseInput = input_gui(gui);
+                    int pauseInput = gui->getEvents();
                     if (pauseInput == 1000) {
                         std::cout << "Resuming game." << std::endl;
                         break;
@@ -369,7 +438,10 @@ int main()
 
     if (sound_thread.joinable())
         sound_thread.join();
-    if (gui) destroy_gui(gui);
+    if (gui) {
+        gui->stop();
+        gui.reset();
+    }
     if (handle) dlclose(handle);
     _exit(0);
 }
