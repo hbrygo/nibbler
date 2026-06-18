@@ -64,11 +64,12 @@ class Game {
         bool _despawnApple;
         int _score;
         bool _michaelMode;
+        bool _wallMode;
 
     public:
         Game();
-        Game(int height, int width, bool michaelMode, bool despawnApple);
-        Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple);
+        Game(int height, int width, bool michaelMode, bool despawnApple, bool wallMode);
+        Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode);
         Game(const Game& other);
         Game& operator=(const Game& other);
         ~Game();
@@ -97,6 +98,7 @@ class Game {
         const std::vector<std::pair<int, int>>& getSnakeBody() const;
         std::vector<std::pair<int, int>>& getSnakeBody2();
         const std::vector<std::pair<int, int>>& getSnakeBody2() const;
+        bool getWallMode() const;
 };
 
 #endif

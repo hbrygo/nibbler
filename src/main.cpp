@@ -106,6 +106,7 @@ struct GameConfig {
 
     bool michaelMode = false;
     bool despawnApple = false;
+    bool wallMode = false;
 
     bool multiplayer = false;
 };
@@ -186,6 +187,7 @@ GameConfig runMenu(char **argv)
 
     if (mainChoice == 2) {
         c.despawnApple = askChoice("Despawn Apple?", {"Yes", "No"}) == 1;
+        c.wallMode = askChoice("Wall Mode?", {"Yes", "No"}) == 1;
         c.width = atoi(argv[1]);
         if (c.width < 10) c.width = 10;
         c.height = atoi(argv[2]);
@@ -225,6 +227,7 @@ int main(int argc, char **argv)
 
     bool michaelMode = config.michaelMode;
     bool despawnApple = config.despawnApple;
+    bool wallMode = config.wallMode;
 
     AppMode mode = (config.multiplayer) ? MODE_LOCAL : MODE_SOLO;
 
@@ -348,7 +351,7 @@ int main(int argc, char **argv)
     });
 
 
-    Game game(width, height, nbPlayer, michaelMode, despawnApple);
+    Game game(width, height, nbPlayer, michaelMode, despawnApple, wallMode);
 
     bool running = true;
     auto last_move = std::chrono::high_resolution_clock::now();

@@ -1,12 +1,12 @@
 #include "nibbler.hpp"
 
-Game::Game() : Game(10, 10, 1, false, false) {
+Game::Game() : Game(10, 10, 1, false, false, false) {
 }
 
-Game::Game(int height, int width, bool michaelMode, bool despawnApple) : Game(height, width, 1, michaelMode, despawnApple) {
+Game::Game(int height, int width, bool michaelMode, bool despawnApple, bool wallMode) : Game(height, width, 1, michaelMode, despawnApple, wallMode) {
 }
 
-Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode) {
+Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode), _wallMode(wallMode) {
     _nbPlayer = nbPlayer < 1 ? 1 : nbPlayer;
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
     _snakeSize = 4;
@@ -25,7 +25,7 @@ Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnAp
     generateApple();
 }
 
-Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeSize2(other._snakeSize2), _nbPlayer(other._nbPlayer), _snakeBody(other._snakeBody), _snakeBody2(other._snakeBody2), _currentDirection(other._currentDirection), _currentDirection2(other._currentDirection2), _applePosition(other._applePosition), _wallPosition(other._wallPosition), _spawnApple(other._spawnApple), _despawnApple(other._despawnApple), _score(other._score), _michaelMode(other._michaelMode) {}
+Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeSize2(other._snakeSize2), _nbPlayer(other._nbPlayer), _snakeBody(other._snakeBody), _snakeBody2(other._snakeBody2), _currentDirection(other._currentDirection), _currentDirection2(other._currentDirection2), _applePosition(other._applePosition), _wallPosition(other._wallPosition), _spawnApple(other._spawnApple), _despawnApple(other._despawnApple), _score(other._score), _michaelMode(other._michaelMode), _wallMode(other._wallMode) {}
 
 Game& Game::operator=(const Game& other) {
     if (this != &other) {
@@ -45,6 +45,7 @@ Game& Game::operator=(const Game& other) {
         _despawnApple = other._despawnApple;
         _score = other._score;
         _michaelMode = other._michaelMode;
+        _wallMode = other._wallMode;
     }
     return *this;
 }

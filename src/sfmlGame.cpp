@@ -262,6 +262,11 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
     if (!_michaelModeTexture) {
         std::cerr << "[SFML] Error: Unable to load projet_michael_youn.png" << std::endl;
     }
+
+    _wallTexture = SFML_LoadTexture_ptr("textureSFML/wall_sfml.png");
+    if (!_wallTexture) {
+        std::cerr << "[SFML] Error: Unable to load wall_sfml.png" << std::endl;
+    }
 }
 
 SFMLGame::~SFMLGame() {

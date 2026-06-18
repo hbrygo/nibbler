@@ -285,6 +285,14 @@ SDL3Game::SDL3Game(int w, int h, bool michaelMode) : _window(nullptr), _renderer
         if (_snakeTurnLeftTexture2) SDL_SetTextureBlendMode_ptr(_snakeTurnLeftTexture2, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
         SDL_DestroySurface_ptr(surface);
     }
+
+    surface = SDL_LoadBMP_ptr("textureSDL3/wall.bmp");
+    if (surface) {
+        SDL_SetSurfaceColorKey_ptr(surface, true, 0x000000);
+        _wallTexture = SDL_CreateTextureFromSurface_ptr(_renderer, surface);
+        if (_wallTexture) SDL_SetTextureBlendMode_ptr(_wallTexture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+        SDL_DestroySurface_ptr(surface);
+    }
 }
 
 SDL3Game::~SDL3Game() {
