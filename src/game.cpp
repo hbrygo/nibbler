@@ -15,7 +15,13 @@ Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnAp
         for (int i = 0; i < nbr_wall; ++i) {
             int x = rand() % _gameAreaHeight;
             int y = rand() % _gameAreaWidth;
-            _gameArea[x][y] = WALL;
+            if (_gameArea[x][y] == EMPTY && std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(x, y)) == _snakeBody.end() &&
+                (_nbPlayer < 2 || std::find(_snakeBody2.begin(), _snakeBody2.end(), std::make_pair(x, y)) == _snakeBody2.end())) {
+                _wallPosition = {x, y};
+            } else {
+                --i;
+                continue;
+            }
         }
     }
     _snakeSize = 4;
@@ -85,7 +91,9 @@ void Game::displayGameArea()
                 }
             }
             if (!printed) {
-                if (_applePosition.first == i && _applePosition.second == j)
+                if (_gameArea[i][j] == WALL || (_wallPosition.first == i && _wallPosition.second == j))
+                    std::cout << "W ";
+                else if (_applePosition.first == i && _applePosition.second == j)
                     std::cout << "A ";
                 else
                     std::cout << "0 ";
@@ -122,7 +130,9 @@ void Game::changeDirection2(Direction direction) {
 int Game::checkDeath() {
     const auto& head = _snakeBody.front();
     // wall
-    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth || head == _wallPosition) {
+    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth ||
+        (head.first >= 0 && head.first < _gameAreaHeight && head.second >= 0 && head.second < _gameAreaWidth &&
+         (_gameArea[head.first][head.second] == WALL || head == _wallPosition))) {
         return -1;
     }
     // snake
@@ -147,7 +157,9 @@ int Game::checkDeath2() {
     }
 
     const auto& head = _snakeBody2.front();
-    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth || head == _wallPosition) {
+    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth ||
+        (head.first >= 0 && head.first < _gameAreaHeight && head.second >= 0 && head.second < _gameAreaWidth &&
+         (_gameArea[head.first][head.second] == WALL || head == _wallPosition))) {
         return -1;
     }
     for (size_t i = 1; i < _snakeBody2.size(); ++i) {
@@ -218,7 +230,8 @@ void Game::generateApple()
 
     for (int i = 0; i < _gameAreaHeight; ++i) {
         for (int j = 0; j < _gameAreaWidth; ++j) {
-            if ((_wallPosition.first == i && _wallPosition.second == j) || std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(i, j)) != _snakeBody.end() ||
+            if ((_wallPosition.first == i && _wallPosition.second == j) || _gameArea[i][j] == WALL ||
+                std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(i, j)) != _snakeBody.end() ||
                 (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), std::make_pair(i, j)) != _snakeBody2.end())) {
                 occupiedCells++;
             }
@@ -239,7 +252,7 @@ void Game::generateApple()
         pos = { rowDist(rng), colDist(rng) };
     } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end() ||
         (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), pos) != _snakeBody2.end()) ||
-        pos == _wallPosition);
+        pos == _wallPosition || _gameArea[pos.first][pos.second] == WALL);
 
     _applePosition = pos;
     gettimeofday(&_spawnApple, nullptr);
@@ -355,7 +368,10 @@ int Game::getCell(int x, int y) const {
     if (_applePosition.first == x && _applePosition.second == y) {
         return FOOD;
     }
-    if ((_wallPosition.first == x && _wallPosition.second == y) || (x < 0 || x >= _gameAreaHeight) || (y < 0 || y >= _gameAreaWidth)) {
+    if (x < 0 || x >= _gameAreaHeight || y < 0 || y >= _gameAreaWidth) {
+        return WALL;
+    }
+    if (_gameArea[x][y] == WALL || (_wallPosition.first == x && _wallPosition.second == y)) {
         return WALL;
     }
     return EMPTY;

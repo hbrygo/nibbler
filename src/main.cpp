@@ -353,6 +353,7 @@ int main(int argc, char **argv)
 
     Game game(width, height, nbPlayer, michaelMode, despawnApple, wallMode);
 
+    game.displayGameArea();
     bool running = true;
     auto last_move = std::chrono::high_resolution_clock::now();
 
