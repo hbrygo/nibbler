@@ -9,6 +9,15 @@ Game::Game(int height, int width, bool michaelMode, bool despawnApple, bool wall
 Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode), _wallMode(wallMode) {
     _nbPlayer = nbPlayer < 1 ? 1 : nbPlayer;
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
+    if (_wallMode) {
+        int nbr_wall = (_gameAreaHeight + _gameAreaWidth) / 10;
+
+        for (int i = 0; i < nbr_wall; ++i) {
+            int x = rand() % _gameAreaHeight;
+            int y = rand() % _gameAreaWidth;
+            _gameArea[x][y] = WALL;
+        }
+    }
     _snakeSize = 4;
     _snakeSize2 = 4;
     for (int i = 0; i < _snakeSize; ++i) {
@@ -113,7 +122,7 @@ void Game::changeDirection2(Direction direction) {
 int Game::checkDeath() {
     const auto& head = _snakeBody.front();
     // wall
-    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth) {
+    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth || head == _wallPosition) {
         return -1;
     }
     // snake
@@ -138,7 +147,7 @@ int Game::checkDeath2() {
     }
 
     const auto& head = _snakeBody2.front();
-    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth) {
+    if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth || head == _wallPosition) {
         return -1;
     }
     for (size_t i = 1; i < _snakeBody2.size(); ++i) {
@@ -207,6 +216,15 @@ void Game::generateApple()
         occupiedCells += _snakeBody2.size();
     }
 
+    for (int i = 0; i < _gameAreaHeight; ++i) {
+        for (int j = 0; j < _gameAreaWidth; ++j) {
+            if ((_wallPosition.first == i && _wallPosition.second == j) || std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(i, j)) != _snakeBody.end() ||
+                (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), std::make_pair(i, j)) != _snakeBody2.end())) {
+                occupiedCells++;
+            }
+        }
+    }
+
     if (occupiedCells >= static_cast<size_t>(_gameAreaHeight) * static_cast<size_t>(_gameAreaWidth)) {
         _applePosition = {-1, -1};
         return;
@@ -220,7 +238,8 @@ void Game::generateApple()
     do {
         pos = { rowDist(rng), colDist(rng) };
     } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end() ||
-        (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), pos) != _snakeBody2.end()));
+        (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), pos) != _snakeBody2.end()) ||
+        pos == _wallPosition);
 
     _applePosition = pos;
     gettimeofday(&_spawnApple, nullptr);
