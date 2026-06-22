@@ -59,7 +59,7 @@ class Game {
         Direction _currentDirection;
         Direction _currentDirection2;
         std::pair<int, int> _applePosition;
-        std::pair<int, int> _wallPosition;
+        std::vector<std::pair<int, int>> _wallPositions;
         struct timeval _spawnApple;
         bool _despawnApple;
         int _score;
@@ -68,7 +68,6 @@ class Game {
 
     public:
         Game();
-        Game(int height, int width, bool michaelMode, bool despawnApple, bool wallMode);
         Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode);
         Game(const Game& other);
         Game& operator=(const Game& other);

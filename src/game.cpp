@@ -3,21 +3,23 @@
 Game::Game() : Game(10, 10, 1, false, false, false) {
 }
 
-Game::Game(int height, int width, bool michaelMode, bool despawnApple, bool wallMode) : Game(height, width, 1, michaelMode, despawnApple, wallMode) {
-}
-
-Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode) : _gameAreaHeight(height), _gameAreaWidth(width), _wallPosition({-1, -1}), _despawnApple(despawnApple), _score(0), _michaelMode(michaelMode), _wallMode(wallMode) {
-    _nbPlayer = nbPlayer < 1 ? 1 : nbPlayer;
+Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnApple, bool wallMode) : _gameAreaHeight(height), _gameAreaWidth(width), _nbPlayer(nbPlayer), _despawnApple(despawnApple), _michaelMode(michaelMode), _wallMode(wallMode) {
+    _wallPositions = {};
+    _score = 0;
     _gameArea.resize(_gameAreaHeight, std::vector<CellType>(_gameAreaWidth, EMPTY));
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> rowDist(0, _gameAreaHeight - 1);
+    std::uniform_int_distribution<int> colDist(0, _gameAreaWidth - 1);
     if (_wallMode) {
         int nbr_wall = (_gameAreaHeight + _gameAreaWidth) / 10;
+        std::cout << "Generating " << nbr_wall << " walls..." << std::endl;
 
         for (int i = 0; i < nbr_wall; ++i) {
-            int x = rand() % _gameAreaHeight;
-            int y = rand() % _gameAreaWidth;
+            int x = rowDist(rng);
+            int y = colDist(rng);
             if (_gameArea[x][y] == EMPTY && std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(x, y)) == _snakeBody.end() &&
                 (_nbPlayer < 2 || std::find(_snakeBody2.begin(), _snakeBody2.end(), std::make_pair(x, y)) == _snakeBody2.end())) {
-                _wallPosition = {x, y};
+                _wallPositions.push_back({x, y});
             } else {
                 --i;
                 continue;
@@ -40,7 +42,7 @@ Game::Game(int height, int width, int nbPlayer, bool michaelMode, bool despawnAp
     generateApple();
 }
 
-Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeSize2(other._snakeSize2), _nbPlayer(other._nbPlayer), _snakeBody(other._snakeBody), _snakeBody2(other._snakeBody2), _currentDirection(other._currentDirection), _currentDirection2(other._currentDirection2), _applePosition(other._applePosition), _wallPosition(other._wallPosition), _spawnApple(other._spawnApple), _despawnApple(other._despawnApple), _score(other._score), _michaelMode(other._michaelMode), _wallMode(other._wallMode) {}
+Game::Game(const Game& other) : _gameAreaHeight(other._gameAreaHeight), _gameAreaWidth(other._gameAreaWidth), _gameArea(other._gameArea), _snakeSize(other._snakeSize), _snakeSize2(other._snakeSize2), _nbPlayer(other._nbPlayer), _snakeBody(other._snakeBody), _snakeBody2(other._snakeBody2), _currentDirection(other._currentDirection), _currentDirection2(other._currentDirection2), _applePosition(other._applePosition), _wallPositions(other._wallPositions), _spawnApple(other._spawnApple), _despawnApple(other._despawnApple), _score(other._score), _michaelMode(other._michaelMode), _wallMode(other._wallMode) {}
 
 Game& Game::operator=(const Game& other) {
     if (this != &other) {
@@ -55,7 +57,7 @@ Game& Game::operator=(const Game& other) {
         _currentDirection = other._currentDirection;
         _currentDirection2 = other._currentDirection2;
         _applePosition = other._applePosition;
-        _wallPosition = other._wallPosition;
+        _wallPositions = other._wallPositions;
         _spawnApple = other._spawnApple;
         _despawnApple = other._despawnApple;
         _score = other._score;
@@ -91,7 +93,7 @@ void Game::displayGameArea()
                 }
             }
             if (!printed) {
-                if (_gameArea[i][j] == WALL || (_wallPosition.first == i && _wallPosition.second == j))
+                if (_gameArea[i][j] == WALL || std::find(_wallPositions.begin(), _wallPositions.end(), std::make_pair(i, j)) != _wallPositions.end())
                     std::cout << "W ";
                 else if (_applePosition.first == i && _applePosition.second == j)
                     std::cout << "A ";
@@ -105,7 +107,6 @@ void Game::displayGameArea()
 }
 
 void Game::changeDirection(Direction direction) {
-    // Vérifier qu'on ne fait pas demi-tour
     if ((getCurrentDirection() == UP && direction == DOWN) ||
         (getCurrentDirection() == DOWN && direction == UP) ||
         (getCurrentDirection() == LEFT && direction == RIGHT) ||
@@ -132,7 +133,7 @@ int Game::checkDeath() {
     // wall
     if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth ||
         (head.first >= 0 && head.first < _gameAreaHeight && head.second >= 0 && head.second < _gameAreaWidth &&
-         (_gameArea[head.first][head.second] == WALL || head == _wallPosition))) {
+         (_gameArea[head.first][head.second] == WALL || std::find(_wallPositions.begin(), _wallPositions.end(), head) != _wallPositions.end()))) {
         return -1;
     }
     // snake
@@ -159,7 +160,7 @@ int Game::checkDeath2() {
     const auto& head = _snakeBody2.front();
     if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth ||
         (head.first >= 0 && head.first < _gameAreaHeight && head.second >= 0 && head.second < _gameAreaWidth &&
-         (_gameArea[head.first][head.second] == WALL || head == _wallPosition))) {
+         (_gameArea[head.first][head.second] == WALL || std::find(_wallPositions.begin(), _wallPositions.end(), head) != _wallPositions.end()))) {
         return -1;
     }
     for (size_t i = 1; i < _snakeBody2.size(); ++i) {
@@ -230,7 +231,7 @@ void Game::generateApple()
 
     for (int i = 0; i < _gameAreaHeight; ++i) {
         for (int j = 0; j < _gameAreaWidth; ++j) {
-            if ((_wallPosition.first == i && _wallPosition.second == j) || _gameArea[i][j] == WALL ||
+            if (std::find(_wallPositions.begin(), _wallPositions.end(), std::make_pair(i, j)) != _wallPositions.end() || _gameArea[i][j] == WALL ||
                 std::find(_snakeBody.begin(), _snakeBody.end(), std::make_pair(i, j)) != _snakeBody.end() ||
                 (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), std::make_pair(i, j)) != _snakeBody2.end())) {
                 occupiedCells++;
@@ -252,7 +253,7 @@ void Game::generateApple()
         pos = { rowDist(rng), colDist(rng) };
     } while (std::find(_snakeBody.begin(), _snakeBody.end(), pos) != _snakeBody.end() ||
         (_nbPlayer >= 2 && std::find(_snakeBody2.begin(), _snakeBody2.end(), pos) != _snakeBody2.end()) ||
-        pos == _wallPosition || _gameArea[pos.first][pos.second] == WALL);
+        std::find(_wallPositions.begin(), _wallPositions.end(), pos) != _wallPositions.end() || _gameArea[pos.first][pos.second] == WALL);
 
     _applePosition = pos;
     gettimeofday(&_spawnApple, nullptr);
@@ -371,7 +372,7 @@ int Game::getCell(int x, int y) const {
     if (x < 0 || x >= _gameAreaHeight || y < 0 || y >= _gameAreaWidth) {
         return WALL;
     }
-    if (_gameArea[x][y] == WALL || (_wallPosition.first == x && _wallPosition.second == y)) {
+    if (_gameArea[x][y] == WALL || std::find(_wallPositions.begin(), _wallPositions.end(), std::make_pair(x, y)) != _wallPositions.end()) {
         return WALL;
     }
     return EMPTY;

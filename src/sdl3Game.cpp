@@ -609,6 +609,10 @@ int SDL3Game::handleInput() {
                     return RIGHT;
                 case SDL_SCANCODE_UP:
                     return UP;
+                case SDL_SCANCODE_ESCAPE:
+                    return -1;
+                default:
+                    break;
             }
         }
     }
