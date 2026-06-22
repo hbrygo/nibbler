@@ -77,8 +77,7 @@ class SDL3Game {
         SDL3Game(const SDL3Game&);
         SDL3Game& operator=(const SDL3Game&);
         void display(const Game& game);
-        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
-        void display_good_part2(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael);
+        void display_good_part(SDL_FRect rect, int currentDirection, const std::vector<std::pair<int, int>>& _snakeBody, bool modeMichael, bool multi);
         int handleInput();
 };
 

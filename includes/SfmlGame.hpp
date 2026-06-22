@@ -47,10 +47,7 @@ class SFMLGame {
         SFMLGame(const SFMLGame&);
         SFMLGame& operator=(const SFMLGame&);
         void display(const Game& game);
-        void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael,
-            std::chrono::high_resolution_clock::time_point& lastMoveTime,
-            std::vector<std::pair<int, int>>& prevSnakeBody);
-        void display_good_part2(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael,
+        void display_good_part(int currentDirection, const std::vector<std::pair<int, int>>& snakeBody, bool modeMichael, bool multi,
             std::chrono::high_resolution_clock::time_point& lastMoveTime,
             std::vector<std::pair<int, int>>& prevSnakeBody);
         int handleInput();
