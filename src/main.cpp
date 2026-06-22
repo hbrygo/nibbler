@@ -85,19 +85,6 @@ enum AppMode {
     MODE_LOCAL,
 };
 
-// static bool isNumber(const std::string& s)
-// {
-//     if (s.empty()) {
-//         return false;
-//     }
-//     for (char c : s) {
-//         if (!std::isdigit(static_cast<unsigned char>(c))) {
-//             return false;
-//         }
-//     }
-//     return true;
-// }
-
 struct GameConfig {
     int width = 10;
     int height = 10;
@@ -167,6 +154,16 @@ std::string askString(const std::string& label)
 GameConfig runMenu(char **argv)
 {
     GameConfig c;
+    try {
+        c.width = atoi(argv[1]);
+        if (c.width < 13 || c.width > 50) throw std::invalid_argument("Width must be at least 13 and max 50");
+        c.height = atoi(argv[2]);
+        if (c.height < 13 || c.height > 50) throw std::invalid_argument("Height must be at least 13 and max 50");
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        c.width = -1;
+        return c;
+    }
 
     int mainChoice = askChoice("GAME MODE", {
         "Multi",
@@ -186,10 +183,6 @@ GameConfig runMenu(char **argv)
 
     if (mainChoice == 2) {
         c.despawnApple = askChoice("Despawn Apple?", {"Yes", "No"}) == 1;
-        c.width = atoi(argv[1]);
-        if (c.width < 10) c.width = 10;
-        c.height = atoi(argv[2]);
-        if (c.height < 10) c.height = 10;
 
         int lib = askChoice("Library", {"sdl3", "sfml", "gl"});
         c.library = (lib == 1 ? "sdl3" : lib == 2 ? "sfml" : "gl");
@@ -211,227 +204,233 @@ GameConfig runMenu(char **argv)
 
 int main(int argc, char **argv)
 {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <width> <height>\n";
-        return 1;
-    }
-
     int onAppleSound = 0;
     std::mutex onAppleMutex;
     std::atomic<bool> soundRunning(true);
     std::thread sound_thread;
-
-    GameConfig config = runMenu(argv);
-
-    bool michaelMode = config.michaelMode;
-    bool despawnApple = config.despawnApple;
-
-    AppMode mode = (config.multiplayer) ? MODE_LOCAL : MODE_SOLO;
-
-    const char* selected_library = config.library.c_str();
-
-    const char* available[] = {"sdl3", "sfml", "gl"};
-    bool valid = false;
-
-    for (auto & i : available)
-        if (strcmp(selected_library, i) == 0)
-            valid = true;
-
-    if (!valid) {
-        std::cerr << "Invalid library\n";
-        return 1;
-    }
-
-    currentLibrary =
-        (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML :
-        (selected_library[0] == 's' && selected_library[1] == 'd') ? SDL3 : GL;
-
-    int width = config.width;
-    int height = config.height;
-    int nbPlayer = (mode == MODE_SOLO) ? 1 : 2;
-
     std::unique_ptr<INibblerDisplay> gui;
     void* handle = nullptr;
-
-    create_t create_gui = nullptr;
-    destroy_t destroy_gui = nullptr;
-    display_t display_gui = nullptr;
-    input_t input_gui = nullptr;
-
-    auto lib_path = [](int mode) {
-        if (mode == SFML) return "./lib_sfml.so";
-        if (mode == SDL3) return "./lib_sdl3.so";
-        return "./lib_gl.so";
-    };
-
-    auto load_lib = [&](const char* lib, int mode) -> bool {
-
-        if (handle) {
-            if (gui) {
-                gui->stop();
-                gui.reset();
-            }
-            dlclose(handle);
-            handle = nullptr;
+    
+    try {
+        if (argc != 3) {
+            throw std::invalid_argument("Usage: " + std::string(argv[0]) + " <width> <height>");
         }
 
-        handle = dlopen(lib, RTLD_LAZY | RTLD_NODELETE);
-        if (!handle) return false;
 
-        const char* suffix =
-            (mode == SFML) ? "sfml" :
-            (mode == SDL3) ? "sdl3" : "gl";
+        GameConfig config = runMenu(argv);
+        if (config.width <= 13)
+            throw std::invalid_argument("Width must be at least 13");
 
-        create_gui = (create_t)dlsym(handle, (std::string("create_gui_") + suffix).c_str());
-        destroy_gui = (destroy_t)dlsym(handle, (std::string("destroy_gui_") + suffix).c_str());
-        display_gui = (display_t)dlsym(handle, (std::string("display_gui_") + suffix).c_str());
-        input_gui = (input_t)dlsym(handle, (std::string("input_gui_") + suffix).c_str());
 
-        if (!create_gui || !destroy_gui || !display_gui || !input_gui) {
+        bool michaelMode = config.michaelMode;
+        bool despawnApple = config.despawnApple;
+
+        AppMode mode = (config.multiplayer) ? MODE_LOCAL : MODE_SOLO;
+
+        const char* selected_library = config.library.c_str();
+
+        const char* available[] = {"sdl3", "sfml", "gl"};
+        bool valid = false;
+
+        for (auto & i : available)
+            if (strcmp(selected_library, i) == 0)
+                valid = true;
+
+        if (!valid) {
+            throw std::invalid_argument("Invalid library");
+        }
+
+        currentLibrary =
+            (selected_library[0] == 's' && selected_library[1] == 'f') ? SFML :
+            (selected_library[0] == 's' && selected_library[1] == 'd') ? SDL3 : GL;
+
+        int width = config.width;
+        int height = config.height;
+        int nbPlayer = (mode == MODE_SOLO) ? 1 : 2;
+
+        create_t create_gui = nullptr;
+        destroy_t destroy_gui = nullptr;
+        display_t display_gui = nullptr;
+        input_t input_gui = nullptr;
+
+        auto lib_path = [](int mode) {
+            if (mode == SFML) return "./lib_sfml.so";
+            if (mode == SDL3) return "./lib_sdl3.so";
+            return "./lib_gl.so";
+        };
+
+        auto load_lib = [&](const char* lib, int mode) -> void {
+
             if (handle) {
+                if (gui) {
+                    gui->stop();
+                    gui.reset();
+                }
                 dlclose(handle);
                 handle = nullptr;
             }
-            return false;
-        }
 
-        void* instance = create_gui(width, height, michaelMode);
-        if (!instance && handle) {
-            dlclose(handle);
-            handle = nullptr;
-            return false;
-        }
+            handle = dlopen(lib, RTLD_LAZY | RTLD_NODELETE);
+            if (!handle) {
+                throw std::runtime_error("Failed to load library [" + std::string(lib) + "]" + std::string(dlerror()));
+            }
 
-        gui = std::unique_ptr<INibblerDisplay>(new DynamicDisplay(instance, create_gui, destroy_gui, display_gui, input_gui, width, height, michaelMode));
-        if (!gui->init(width, height, michaelMode)) {
-            gui->stop();
-            gui.reset();
-            dlclose(handle);
-            handle = nullptr;
-            return false;
-        }
-        return true;
-    };
+            const char* suffix =
+                (mode == SFML) ? "sfml" :
+                (mode == SDL3) ? "sdl3" : "gl";
 
-    if (!load_lib(lib_path(currentLibrary), currentLibrary))
-        return 1;
+            create_gui = (create_t)dlsym(handle, (std::string("create_gui_") + suffix).c_str());
+            destroy_gui = (destroy_t)dlsym(handle, (std::string("destroy_gui_") + suffix).c_str());
+            display_gui = (display_t)dlsym(handle, (std::string("display_gui_") + suffix).c_str());
+            input_gui = (input_t)dlsym(handle, (std::string("input_gui_") + suffix).c_str());
 
+            if (!create_gui || !destroy_gui || !display_gui || !input_gui) {
+                if (handle) {
+                    dlclose(handle);
+                    handle = nullptr;
+                }
+                throw std::runtime_error("Failed to load symbols from library [" + std::string(lib) + "]" + std::string(dlerror()));
+            }
 
-    sound_thread = std::thread([&]() {
-        ma_engine engine;
-        if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
-            std::cerr << "Failed to initialize audio engine" << std::endl;
-            return;
-        }
+            void* instance = create_gui(width, height, michaelMode);
+            if (!instance && handle) {
+                dlclose(handle);
+                handle = nullptr;
+                throw std::runtime_error("Failed to create GUI instance from library [" + std::string(lib) + "]");
+            }   
 
-        while (soundRunning) {
-            bool shouldPlay = false;
-            {
-                std::lock_guard<std::mutex> lock(onAppleMutex);
-                if (onAppleSound > 0) {
-                    --onAppleSound;
-                    shouldPlay = true;
+            gui = std::unique_ptr<INibblerDisplay>(new DynamicDisplay(instance, create_gui, destroy_gui, display_gui, input_gui, width, height, michaelMode));
+            if (!gui->init(width, height, michaelMode)) {
+                gui->stop();
+                gui.reset();
+                dlclose(handle);
+                handle = nullptr;
+                throw std::runtime_error("Failed to initialize GUI");
+            }
+        };
+
+        load_lib(lib_path(currentLibrary), currentLibrary);
+
+        sound_thread = std::thread([&]() {
+            ma_engine engine;
+            if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
+                std::cerr << "Failed to initialize audio engine" << std::endl;
+                return ;
+            }
+
+            while (soundRunning) {
+                bool shouldPlay = false;
+                {
+                    std::lock_guard<std::mutex> lock(onAppleMutex);
+                    if (onAppleSound > 0) {
+                        --onAppleSound;
+                        shouldPlay = true;
+                    }
+                }
+
+                if (shouldPlay) {
+                    std::cout << "Playing apple sound effect!" << std::endl;
+                    if (ma_engine_play_sound(&engine, "mp3/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
+                        std::cerr << "Failed to play sound" << std::endl;
+                    }
+                } else {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
             }
 
-            if (shouldPlay) {
-                std::cout << "Playing apple sound effect!" << std::endl;
-                if (ma_engine_play_sound(&engine, "mp3/Yoshi Sound Ba-Dum (mlem).mp3", NULL) != MA_SUCCESS) {
-                    std::cerr << "Failed to play sound" << std::endl;
+            ma_engine_uninit(&engine);
+        });
+
+
+        Game game(width, height, nbPlayer, michaelMode, despawnApple);
+
+        bool running = true;
+        auto last_move = std::chrono::high_resolution_clock::now();
+
+        while (running) {
+            gui->updateGameData(game);
+            gui->refreshDisplay();
+            int input = gui->getEvents();
+
+            switch (input) {
+                case 10:
+                    std::cout << "Switching to SDL3..." << std::endl;
+                    load_lib(lib_path(SDL3), SDL3);
+                    break;
+                case 20:
+                    std::cout << "Switching to SFML..." << std::endl;
+                    load_lib(lib_path(SFML), SFML);
+                    break;
+                case 30:
+                    if (!michaelMode) {
+                        std::cout << "Switching to GL..." << std::endl;
+                        load_lib(lib_path(GL), GL);
+                    }
+                    break;
+                case 1000:
+                    std::cout << "Pausing game. Press P to resume." << std::endl;
+                    while (true) {
+                        int pauseInput = gui->getEvents();
+                        if (pauseInput == 1000) {
+                            std::cout << "Resuming game." << std::endl;
+                            break;
+                        }
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    }
+                    break;
+                case UP:
+                    game.changeDirection(UP);
+                    break;
+                case DOWN:
+                    game.changeDirection(DOWN);
+                    break;
+                case LEFT:
+                    game.changeDirection(LEFT);
+                    break;
+                case RIGHT:
+                    game.changeDirection(RIGHT);
+                    break;
+                default:
+                    break;
+            }
+            if (mode == MODE_LOCAL) {
+                switch (input) {
+                    case P2_UP:
+                        game.changeDirection2(UP);
+                        break;
+                    case P2_DOWN:
+                        game.changeDirection2(DOWN);
+                        break;
+                    case P2_LEFT:
+                        game.changeDirection2(LEFT);
+                        break;
+                    case P2_RIGHT:
+                        game.changeDirection2(RIGHT);
+                        break;
+                    default:
+                        break;
                 }
+            }
+            if (input == -1) running = false;
+
+            auto now = std::chrono::high_resolution_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
+
+            if (elapsed >= TICK_RATE) {
+                if (game.moveSnake(onAppleSound, onAppleMutex) == -1)
+                    running = false;
+                if (running && game.getNbPlayer() == 2 && game.moveSnake2(onAppleSound, onAppleMutex) == -1)
+                    running = false;
+
+                last_move = now;
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
 
-        ma_engine_uninit(&engine);
-    });
-
-
-    Game game(width, height, nbPlayer, michaelMode, despawnApple);
-
-    bool running = true;
-    auto last_move = std::chrono::high_resolution_clock::now();
-
-    while (running) {
-        gui->updateGameData(game);
-        gui->refreshDisplay();
-        int input = gui->getEvents();
-
-        switch (input) {
-            case 10:
-                std::cout << "Switching to SDL3..." << std::endl;
-                if (!load_lib(lib_path(SDL3), SDL3)) running = false;
-                break;
-            case 20:
-                std::cout << "Switching to SFML..." << std::endl;
-                if (!load_lib(lib_path(SFML), SFML)) running = false;
-                break;
-            case 30:
-                if (!michaelMode) {
-                    std::cout << "Switching to GL..." << std::endl;
-                    if (!load_lib(lib_path(GL), GL)) running = false;
-                }
-                break;
-            case 1000:
-                std::cout << "Pausing game. Press P to resume." << std::endl;
-                while (true) {
-                    int pauseInput = gui->getEvents();
-                    if (pauseInput == 1000) {
-                        std::cout << "Resuming game." << std::endl;
-                        break;
-                    }
-                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                break;
-            case UP:
-                game.changeDirection(UP);
-                break;
-            case DOWN:
-                game.changeDirection(DOWN);
-                break;
-            case LEFT:
-                game.changeDirection(LEFT);
-                break;
-            case RIGHT:
-                game.changeDirection(RIGHT);
-                break;
-            default:
-                break;
-        }
-        if (mode == MODE_LOCAL) {
-            switch (input) {
-                case P2_UP:
-                    game.changeDirection2(UP);
-                    break;
-                case P2_DOWN:
-                    game.changeDirection2(DOWN);
-                    break;
-                case P2_LEFT:
-                    game.changeDirection2(LEFT);
-                    break;
-                case P2_RIGHT:
-                    game.changeDirection2(RIGHT);
-                    break;
-                default:
-                    break;
-            }
-        }
-        if (input == -1) running = false;
-
-        auto now = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
-
-        if (elapsed >= TICK_RATE) {
-            if (game.moveSnake(onAppleSound, onAppleMutex) == -1)
-                running = false;
-            if (running && game.getNbPlayer() == 2 && game.moveSnake2(onAppleSound, onAppleMutex) == -1)
-                running = false;
-
-            last_move = now;
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+    } catch (const std::exception& e) {
+        std::cerr << "this is an exception" << std::endl;
+        std::cerr << "An error occurred: " << e.what() << std::endl;
     }
 
     soundRunning = false;

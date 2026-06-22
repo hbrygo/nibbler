@@ -709,44 +709,42 @@ int GLGame::handleInput() {
         return -1;
     }
 
-    if (edge_pressed[GLFW_KEY_ESCAPE]) {
-        edge_pressed.clear();
-        close_requested = false;
-        glfwSetWindowShouldClose_ptr(_window, 1);
-        return -1;
-    }
-    if (edge_pressed[GLFW_KEY_1]) {
-        edge_pressed.clear();
-        currentLibrary = SDL3;
-        return 10;
-    }
-    if (edge_pressed[GLFW_KEY_2]) {
-        edge_pressed.clear();
-        currentLibrary = SFML;
-        return 20;
-    }
-    if (edge_pressed[GLFW_KEY_3]) {
-        edge_pressed.clear();
-        currentLibrary = GL;
-        return 30;
-    }
-    if (edge_pressed[GLFW_KEY_LEFT]) {
-        edge_pressed.clear();
-        return turnLeft(_lastDirection);
-    }
-    if (edge_pressed[GLFW_KEY_RIGHT]) {
-        edge_pressed.clear();
-        return turnRight(_lastDirection);
-    }
-    if (edge_pressed[GLFW_KEY_A]) {
-        const Direction nextDirection = turnLeft(_lastDirection2);
-        edge_pressed.clear();
-        return directionToP2Action(nextDirection);
-    }
-    if (edge_pressed[GLFW_KEY_D]) {
-        const Direction nextDirection = turnRight(_lastDirection2);
-        edge_pressed.clear();
-        return directionToP2Action(nextDirection);
+    for (const auto& [key, pressed] : edge_pressed) {
+        if (!pressed) continue;
+
+        switch (key) {
+            case GLFW_KEY_ESCAPE:
+                edge_pressed.clear();
+                close_requested = false;
+                glfwSetWindowShouldClose_ptr(_window, 1);
+                return -1;
+            case GLFW_KEY_1:
+                edge_pressed.clear();
+                currentLibrary = SDL3;
+                return 10;
+            case GLFW_KEY_2:
+                edge_pressed.clear();
+                currentLibrary = SFML;
+                return 20;
+            case GLFW_KEY_3:
+                edge_pressed.clear();
+                currentLibrary = GL;
+                return 30;
+            case GLFW_KEY_LEFT:
+                edge_pressed.clear();
+                return turnLeft(_lastDirection);
+            case GLFW_KEY_RIGHT:
+                edge_pressed.clear();
+                return turnRight(_lastDirection);
+            case GLFW_KEY_A:
+                edge_pressed.clear();
+                return directionToP2Action(turnLeft(_lastDirection2));
+            case GLFW_KEY_D:
+                edge_pressed.clear();
+                return directionToP2Action(turnRight(_lastDirection2));
+            default:
+                break;
+        }
     }
 
     edge_pressed.clear();

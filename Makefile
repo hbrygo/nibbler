@@ -38,7 +38,7 @@ LIB_SFML	= ${SFML_OUTPUT_NAME}
 CC      = cc
 CXX     = c++
 RM		= rm -rf
-CXXFLAGS= -Wall -Wextra -Werror -g -std=c++11 -fPIC
+CXXFLAGS= -Wall -Wextra -Werror -g -std=c++17 -fPIC
 
 LDFLAGS = -ldl
 
