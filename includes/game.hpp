@@ -79,8 +79,7 @@ class Game {
         void setMichaelMode(bool enabled);
         bool getMichaelMode() const;
         void displayGameArea();
-        void changeDirection(Direction direction);
-        void changeDirection2(Direction direction);
+        void changeDirection(Direction direction, int nbPlayer);
         int moveSnake(int& onAppleSound, std::mutex& onAppleMutex);
         int moveSnake2(int& onAppleSound, std::mutex& onAppleMutex);
         int checkDeath();

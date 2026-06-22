@@ -106,7 +106,7 @@ void Game::displayGameArea()
     std::cout << std::endl;
 }
 
-void Game::changeDirection(Direction direction) {
+void Game::changeDirection(Direction direction, int nbPlayer) {
     if ((getCurrentDirection() == UP && direction == DOWN) ||
         (getCurrentDirection() == DOWN && direction == UP) ||
         (getCurrentDirection() == LEFT && direction == RIGHT) ||
@@ -114,18 +114,12 @@ void Game::changeDirection(Direction direction) {
         std::cerr << "Snake is already moving in that direction!" << std::endl;
         return;
     }
-    _currentDirection = direction;
-}
-
-void Game::changeDirection2(Direction direction) {
-    if ((getCurrentDirection2() == UP && direction == DOWN) ||
-        (getCurrentDirection2() == DOWN && direction == UP) ||
-        (getCurrentDirection2() == LEFT && direction == RIGHT) ||
-        (getCurrentDirection2() == RIGHT && direction == LEFT)) {
-        std::cerr << "Snake 2 is already moving in that direction!" << std::endl;
-        return;
+    if (nbPlayer == 1) {
+        _currentDirection = direction;
+    } else {
+        _currentDirection2 = direction;
     }
-    _currentDirection2 = direction;
+
 }
 
 int Game::checkDeath() {

@@ -350,16 +350,16 @@ int main(int argc, char **argv)
                     }
                     break;
                 case UP:
-                    game.changeDirection(UP);
+                    game.changeDirection(UP, 1);
                     break;
                 case DOWN:
-                    game.changeDirection(DOWN);
+                    game.changeDirection(DOWN, 1);
                     break;
                 case LEFT:
-                    game.changeDirection(LEFT);
+                    game.changeDirection(LEFT, 1);
                     break;
                 case RIGHT:
-                    game.changeDirection(RIGHT);
+                    game.changeDirection(RIGHT, 1);
                     break;
                 default:
                     break;
@@ -367,16 +367,16 @@ int main(int argc, char **argv)
             if (mode == MODE_LOCAL) {
                 switch (input) {
                     case P2_UP:
-                        game.changeDirection2(UP);
+                        game.changeDirection(UP, 2);
                         break;
                     case P2_DOWN:
-                        game.changeDirection2(DOWN);
+                        game.changeDirection(DOWN, 2);
                         break;
                     case P2_LEFT:
-                        game.changeDirection2(LEFT);
+                        game.changeDirection(LEFT, 2);
                         break;
                     case P2_RIGHT:
-                        game.changeDirection2(RIGHT);
+                        game.changeDirection(RIGHT, 2);
                         break;
                     default:
                         break;
