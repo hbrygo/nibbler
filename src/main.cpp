@@ -350,16 +350,16 @@ int main(int argc, char **argv)
                     }
                     break;
                 case UP:
-                    game.changeDirection(UP, 1);
+                    game.changeDirection(UP, PLAYER_1);
                     break;
                 case DOWN:
-                    game.changeDirection(DOWN, 1);
+                    game.changeDirection(DOWN, PLAYER_1);
                     break;
                 case LEFT:
-                    game.changeDirection(LEFT, 1);
+                    game.changeDirection(LEFT, PLAYER_1);
                     break;
                 case RIGHT:
-                    game.changeDirection(RIGHT, 1);
+                    game.changeDirection(RIGHT, PLAYER_1);
                     break;
                 default:
                     break;
@@ -367,16 +367,16 @@ int main(int argc, char **argv)
             if (mode == MODE_LOCAL) {
                 switch (input) {
                     case P2_UP:
-                        game.changeDirection(UP, 2);
+                        game.changeDirection(UP, PLAYER_2);
                         break;
                     case P2_DOWN:
-                        game.changeDirection(DOWN, 2);
+                        game.changeDirection(DOWN, PLAYER_2);
                         break;
                     case P2_LEFT:
-                        game.changeDirection(LEFT, 2);
+                        game.changeDirection(LEFT, PLAYER_2);
                         break;
                     case P2_RIGHT:
-                        game.changeDirection(RIGHT, 2);
+                        game.changeDirection(RIGHT, PLAYER_2);
                         break;
                     default:
                         break;
@@ -388,9 +388,9 @@ int main(int argc, char **argv)
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move).count();
 
             if (elapsed >= TICK_RATE) {
-                if (game.moveSnake(onAppleSound, onAppleMutex) == -1)
+                if (game.moveSnake(onAppleSound, onAppleMutex, PLAYER_1) == -1)
                     running = false;
-                if (running && game.getNbPlayer() == 2 && game.moveSnake2(onAppleSound, onAppleMutex) == -1)
+                if (running && game.getNbPlayer() == 2 && game.moveSnake(onAppleSound, onAppleMutex, PLAYER_2) == -1)
                     running = false;
 
                 last_move = now;
