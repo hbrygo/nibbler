@@ -9,7 +9,9 @@
 # include <mutex>
 # include <../miniaudio/miniaudio.h>
 
-#define TICK_RATE 150
+# define TICK_RATE 150
+# define PLAYER_1 1
+# define PLAYER_2 2
 
 enum Direction
 {
@@ -80,12 +82,12 @@ class Game {
         bool getMichaelMode() const;
         void displayGameArea();
         void changeDirection(Direction direction, int nbPlayer);
-        int moveSnake(int& onAppleSound, std::mutex& onAppleMutex);
-        int moveSnake2(int& onAppleSound, std::mutex& onAppleMutex);
-        int checkDeath();
-        int checkDeath2();
-        int onApple();
-        int onApple2();
+        int moveSnake(int& onAppleSound, std::mutex& onAppleMutex, int playerId);
+        //int moveSnake2(int& onAppleSound, std::mutex& onAppleMutex);
+        int checkDeath(int playerId);
+        //int checkDeath2();
+        int onApple(int playerId);
+        //int onApple2();
         void generateApple();
         timeval getSpawnApple() const;
         bool getAppelDespawned() const;
