@@ -120,37 +120,6 @@ int askChoice(const std::string& title, const std::vector<std::string>& options)
     }
 }
 
-int askInt(const std::string& label, int def)
-{
-    while (true) {
-        std::string s;
-
-        std::cout << label << " (defaut " << def << "): ";
-        std::getline(std::cin >> std::ws, s);
-
-        if (s.empty())
-            return def;
-
-        try {
-            size_t consumed = 0;
-            int value = std::stoi(s, &consumed);
-
-            if (consumed == s.size())
-                return value;
-        } catch (const std::exception&) {
-        }
-
-        std::cout << "Please enter a valid integer.\n";
-    }
-}
-
-std::string askString(const std::string& label)
-{
-    std::string s;
-    std::cout << label << ": ";
-    std::getline(std::cin >> std::ws, s);
-    return s;
-}
 
 GameConfig runMenu(char **argv)
 {
@@ -197,11 +166,6 @@ GameConfig runMenu(char **argv)
     }
 
     c.multiplayer = true;
-
-
-    c.width = askInt("Width", 10);
-    c.height = askInt("Height", 10);
-
     int lib = askChoice("Library", {"sdl3", "sfml", "gl"});
     c.library = (lib == 1 ? "sdl3" : lib == 2 ? "sfml" : "gl");
 
