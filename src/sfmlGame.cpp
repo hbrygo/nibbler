@@ -192,11 +192,6 @@ SFMLGame::SFMLGame(int w, int h, bool michaelMode) : _window(nullptr), _width(w)
         std::cerr << "[SFML] Error: Unable to load snake_ground_5.png" << std::endl;
     }
 
-    _wallTexture = SFML_LoadTexture_ptr("textureSFML/Snake_green_wall.png");
-    if (!_wallTexture) {
-        std::cerr << "[SFML] Error: Unable to load Snake_green_wall.png" << std::endl;
-    }
-
     _snakeHeadTexture = SFML_LoadTexture_ptr("textureSFML/snake_head_up.png");
     if (!_snakeHeadTexture) {
         std::cerr << "[SFML] Error: Unable to load snake_head_up.png" << std::endl;
