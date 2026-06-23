@@ -177,30 +177,6 @@ int Game::checkDeath(int playerId) {
     return 0;
 }
 
-// int Game::checkDeath2() {
-//     if (_nbPlayer < 2 || _snakeBody2.empty()) {
-//         return 0;
-//     }
-
-//     const auto& head = _snakeBody2.front();
-//     if (head.first < 0 || head.first >= _gameAreaHeight || head.second < 0 || head.second >= _gameAreaWidth ||
-//         (head.first >= 0 && head.first < _gameAreaHeight && head.second >= 0 && head.second < _gameAreaWidth &&
-//          (_gameArea[head.first][head.second] == WALL || std::find(_wallPositions.begin(), _wallPositions.end(), head) != _wallPositions.end()))) {
-//         return -1;
-//     }
-//     for (size_t i = 1; i < _snakeBody2.size(); ++i) {
-//         if (head == _snakeBody2[i]) {
-//             return -1;
-//         }
-//     }
-//     for (const auto& segment : _snakeBody) {
-//         if (head == segment) {
-//             return -1;
-//         }
-//     }
-//     return 0;
-// }
-
 int Game::onApple(int playerId) {
     if (playerId == PLAYER_1) {
         const auto& head = _snakeBody.front();
@@ -244,31 +220,6 @@ int Game::onApple(int playerId) {
     }
     return 0;
 }
-
-// int Game::onApple2() {
-//     if (_nbPlayer < 2 || _snakeBody2.empty()) {
-//         return 0;
-//     }
-
-//     const auto& head = _snakeBody2.front();
-//     if (head == _applePosition) {
-//         _snakeSize2++;
-//         std::pair<int, int> newSegment = _snakeBody2.back();
-//         std::pair<int, int> previous = _snakeBody2[_snakeBody2.size() - 2];
-//         if (previous.first == newSegment.first && previous.second == newSegment.second + 1) {
-//             newSegment.second += 1;
-//         } else if (previous.first == newSegment.first && previous.second == newSegment.second - 1) {
-//             newSegment.second -= 1;
-//         } else if (previous.first == newSegment.first + 1 && previous.second == newSegment.second) {
-//             newSegment.first += 1;
-//         } else if (previous.first == newSegment.first - 1 && previous.second == newSegment.second) {
-//             newSegment.first -= 1;
-//         }
-//         _snakeBody2.push_back(newSegment);
-//         return 1;
-//     }
-//     return 0;
-// }
 
 void Game::generateApple()
 {
@@ -398,53 +349,6 @@ int Game::moveSnake(int& onAppleSound, std::mutex& onAppleMutex, int playerId) {
 
     return 0;
 }
-
-// int Game::moveSnake2(int& onAppleSound, std::mutex& onAppleMutex) {
-//     if (_nbPlayer < 2 || _snakeBody2.empty()) {
-//         return 0;
-//     }
-
-//     std::pair<int, int> newHead = _snakeBody2.front();
-
-//     if (_currentDirection2 == UP) {
-//         newHead.second -= 1;
-//     } else if (_currentDirection2 == DOWN) {
-//         newHead.second += 1;
-//     } else if (_currentDirection2 == LEFT) {
-//         newHead.first -= 1;
-//     } else if (_currentDirection2 == RIGHT) {
-//         newHead.first += 1;
-//     } else {
-//         return 0;
-//     }
-
-//     for (size_t i = _snakeBody2.size() - 1; i > 0; --i) {
-//         _snakeBody2[i] = _snakeBody2[i - 1];
-//     }
-//     _snakeBody2[0] = newHead;
-
-//     if (onApple2()) {
-//         struct timeval now;
-//         gettimeofday(&now, nullptr);
-//         long elapsed = (now.tv_sec - _spawnApple.tv_sec) * 2;
-//         if (elapsed > 100) elapsed = 100;
-//         _score += 100 - elapsed;
-//         std::cerr << "This apple give you " << 100 - elapsed << " points!" << std::endl;
-//         {
-//             std::lock_guard<std::mutex> lock(onAppleMutex);
-//             onAppleSound++;
-//         }
-//         generateApple();
-//     }
-
-//     if (checkDeath2()) {
-//         std::cout << "Score: " << _score << std::endl;
-//         std::cout << "Game Over!" << std::endl;
-//         return -1;
-//     }
-
-//     return 0;
-// }
 
 int Game::getCell(int x, int y) const {
     for (const auto& segment : _snakeBody) {

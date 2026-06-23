@@ -83,11 +83,8 @@ class Game {
         void displayGameArea();
         void changeDirection(Direction direction, int nbPlayer);
         int moveSnake(int& onAppleSound, std::mutex& onAppleMutex, int playerId);
-        //int moveSnake2(int& onAppleSound, std::mutex& onAppleMutex);
         int checkDeath(int playerId);
-        //int checkDeath2();
         int onApple(int playerId);
-        //int onApple2();
         void generateApple();
         timeval getSpawnApple() const;
         bool getAppelDespawned() const;
